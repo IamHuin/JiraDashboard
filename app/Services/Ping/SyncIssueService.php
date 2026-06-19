@@ -5,6 +5,7 @@ namespace App\Services\Ping;
 use App\DTO\Project\ProjectDTO;
 use App\Repositories\Interfaces\ProjectInterface;
 use App\Repositories\Interfaces\SyncIssueInterface;
+use App\Services\Cache\DashboardCacheService;
 use App\Services\Dashboard\HandleBugRatioService;
 use Carbon\Carbon;
 use Exception;
@@ -21,18 +22,22 @@ class SyncIssueService extends ConnectJiraService
     protected $jiraRepo;
     protected $jiraHandleBug;
     protected $projectRepo;
+    protected $cacheService;
 
-    public function __construct(SyncIssueInterface $jiraRepo, HandleBugRatioService $jiraHandleBug, ProjectInterface $projectRepo)
+    public function __construct(
+        SyncIssueInterface    $jiraRepo,
+        HandleBugRatioService $jiraHandleBug,
+        ProjectInterface      $projectRepo,
+        DashboardCacheService $cacheService
+    )
     {
         parent::__construct();
         $this->jiraRepo = $jiraRepo;
         $this->jiraHandleBug = $jiraHandleBug;
         $this->projectRepo = $projectRepo;
+        $this->cacheService = $cacheService;
     }
 
-    /**
-     * Bắn JQL kéo Issues bất đồng bộ bằng Guzzle Pool
-     */
     protected function fetchIssuesByJql(string $jql): Collection
     {
         $user = Auth::user();
@@ -88,9 +93,6 @@ class SyncIssueService extends ConnectJiraService
         return collect($allIssues);
     }
 
-    /**
-     * Parse mảng thô từ Jira sang mảng nội bộ sạch
-     */
     protected function parseIssues(array $issues): array
     {
         return collect($issues)->map(function ($issue) {
@@ -148,14 +150,10 @@ class SyncIssueService extends ConnectJiraService
         $this->saveAndProcess($issues);
     }
 
-    /**
-     * Đồng bộ gốc từ API Jira - Quét trọn vẹn danh sách dự án (An toàn, đủ Avatar)
-     */
     public function syncAndFetchProjects(): array
     {
         $user = Auth::user();
 
-        // Tạo bản clone để xử lý password, tránh lỗi đúp decrypt như đã phân tích
         $clonedUser = clone $user;
         if (base64_decode($clonedUser->jira_password, true) !== false) {
             try {
@@ -189,9 +187,6 @@ class SyncIssueService extends ConnectJiraService
         return $projectsArray;
     }
 
-    /**
-     * Xử lý lưu DB và tính toán báo cáo thống kê
-     */
     protected function saveAndProcess(Collection $issues): void
     {
         if ($issues->isEmpty()) {
@@ -235,5 +230,11 @@ class SyncIssueService extends ConnectJiraService
         }
 
         $this->jiraRepo->saveUserStats($stats);
+
+        $user = Auth::user();
+        if ($user) {
+            $this->cacheService->clearUserCache($user->id);
+            Log::info("User ID {$user->id} đã đồng bộ Jira thành công: Đã dọn dẹp sạch sẽ mảng Registry và các file Cache liên quan.");
+        }
     }
 }
