@@ -10,18 +10,24 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 
-#[Fillable(['jira_username', 'jira_password'])]
+#[Fillable(['jira_username', 'jira_password', 'jira_projects_json'])]
 #[Hidden(['jira_password'])]
 class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    protected $table = 'users';
+
+    protected $casts = [
+        'jira_projects_json' => 'array',
+    ];
+
     public function getJWTIdentifier()
     {
         return $this->getKey();
     }
-    
+
     public function getJWTCustomClaims(): array
     {
         return [];

@@ -34,5 +34,11 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    
+    'jira' => [
+        'base_uri' => env('JIRA_BASE_URI', 'https://jira.viettelsoftware.com'),
+        'max_results' => env('JIRA_MAX_RESULTS', 200),
+        'start_at' => env('JIRA_START_AT', 0),
+    ]
 
 ];

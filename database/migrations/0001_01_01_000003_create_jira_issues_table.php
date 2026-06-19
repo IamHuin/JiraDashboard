@@ -1,0 +1,38 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('jira_issues', function (Blueprint $table) {
+            $table->id();
+
+            $table->string('key')->unique()->comment('Mã issue trên Jira');
+            $table->string('project_name')->nullable()->comment('Tên dự án trên Jira');
+            $table->string('summary')->nullable()->comment('Tiêu đề/tóm tắt issue trên Jira');
+            $table->string('issuetype')->nullable()->comment('Loại issue: Bug hoặc Sub-task');
+            $table->string('assignee')->nullable()->comment('Người được assign xử lý issue');
+            $table->string('causer')->nullable()->comment('Người gây ra lỗi');
+            $table->string('ulnl')->nullable()->comment('Ước lượng nỗ lực');
+            $table->string('slsx')->nullable()->comment('Sản lượng sản xuất');
+            $table->string('status')->nullable()->comment('Trạng thái issue');
+            $table->timestamp('created_at_jira')->nullable()->comment('Thời gian created từ Jira');
+
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('jira_issues');
+    }
+};

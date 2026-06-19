@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('users', function (Blueprint $table) {
+        Schema::create('jira_sync', function (Blueprint $table) {
             $table->id();
-            $table->string('jira_username')->unique();
-            $table->string('jira_password');
-            $table->json('jira_projects_json')->nullable();
+
+            $table->timestamp('last_sync_time')->nullable()->comment('Thời gian created mới nhất từ Jira');
+
             $table->timestamps();
         });
     }
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
+        Schema::dropIfExists('jira_sync');
     }
 };
