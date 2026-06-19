@@ -24,9 +24,9 @@ class DashboardDTO extends DataTransferObject
     public function toArray(): array
     {
         return [
-            'period_start'  => $this->period_start,
-            'period_end'    => $this->period_end,
-            'user_name'     => $this->user_name,
+            'period_start' => $this->period_start,
+            'period_end' => $this->period_end,
+            'user_name' => $this->user_name,
             'project_names' => $this->project_names,
         ];
     }

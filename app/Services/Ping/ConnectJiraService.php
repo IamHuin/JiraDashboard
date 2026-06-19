@@ -44,7 +44,7 @@ class ConnectJiraService
             return ['issues' => [], 'total' => 0, 'error' => $e->getMessage()];
         }
     }
-    
+
     public function connectToJiraAsync($user, $url)
     {
         $client = $this->initClient($user);

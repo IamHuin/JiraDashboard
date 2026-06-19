@@ -23,14 +23,14 @@ class DashboardRepository implements DashboardInterface
             $baseQuery->whereDate('created_at_jira', '<=', $filters['period_end']);
         }
 
-        $totalUsers   = (clone $baseQuery)->distinct('assignee')->count('assignee');
+        $totalUsers = (clone $baseQuery)->distinct('assignee')->count('assignee');
         $totalSubtask = (clone $baseQuery)->where('issuetype', 'Sub-task')->count();
-        $totalBug     = (clone $baseQuery)->where('issuetype', 'Bug')->count();
+        $totalBug = (clone $baseQuery)->where('issuetype', 'Bug')->count();
 
         return [
-            'total_users'   => $totalUsers,
+            'total_users' => $totalUsers,
             'total_subtask' => $totalSubtask,
-            'total_bug'     => $totalBug,
+            'total_bug' => $totalBug,
         ];
     }
 

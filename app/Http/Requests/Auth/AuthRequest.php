@@ -21,7 +21,7 @@ class AuthRequest extends FormRequest
             'password' => trim($this->password),
         ]);
     }
-    
+
     public function messages(): array
     {
         return [

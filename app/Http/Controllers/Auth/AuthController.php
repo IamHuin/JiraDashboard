@@ -43,13 +43,11 @@ class AuthController extends Controller
 
         $token = auth()->login($user);
 
-        dispatch(function () {
-            try {
-                $this->syncService->syncAndFetchProjects();
-            } catch (\Exception $e) {
-                \Log::error("Lỗi đồng bộ project ngầm sau response: " . $e->getMessage());
-            }
-        })->afterResponse();
+        try {
+            $this->syncService->syncAndFetchProjects();
+        } catch (\Exception $e) {
+            \Log::error("Lỗi đồng bộ dự án trực tiếp khi Login: " . $e->getMessage());
+        };
 
         return response()->json([
             'token' => $token,

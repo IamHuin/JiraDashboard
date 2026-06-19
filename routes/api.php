@@ -55,6 +55,11 @@ Route::group(['namespace' => 'App\Http\Controllers'], function () {
                 'uses' => 'DashboardController@getBugRatio',
                 'as' => 'dashboard.get_bug_ratio'
             ]);
+
+            Route::get('projects', [
+                'uses' => 'DashboardController@getProjects',
+                'as' => 'dashboard.projects'
+            ]);
         });
     });
 });

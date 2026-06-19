@@ -52,18 +52,18 @@ class SyncIssueRepository implements SyncIssueInterface
             DB::table('jira_user_stats')->updateOrInsert(
                 [
                     'user_name' => $stat['user_name'],
-                    'period'    => $stat['period'],
+                    'period' => $stat['period'],
                     'project_name' => $stat['project_name'],
                 ],
                 [
-                    'bug_count'          => $stat['bug_count'],
-                    'bug_percent'        => $stat['bug_percent'],
-                    'subtask_count'      => $stat['subtask_count'],
-                    'ulnl_count'         => $stat['ulnl_count'],
-                    'slsx_count'         => $stat['slsx_count'],
+                    'bug_count' => $stat['bug_count'],
+                    'bug_percent' => $stat['bug_percent'],
+                    'subtask_count' => $stat['subtask_count'],
+                    'ulnl_count' => $stat['ulnl_count'],
+                    'slsx_count' => $stat['slsx_count'],
                     'slsx_vs_ulnl_ratio' => $stat['slsx_vs_ulnl_ratio'],
-                    'updated_at'         => now(),
-                    'created_at'         => now(),
+                    'updated_at' => now(),
+                    'created_at' => now(),
                 ]
             );
         }
