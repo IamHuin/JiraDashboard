@@ -45,6 +45,18 @@ Route::group(['namespace' => 'App\Http\Controllers'], function () {
             ]);
         });
 
+        Route::group(['prefix' => 'cache'], function () {
+            Route::get('get_tracked_cache_keys', [
+                'uses' => 'DashboardController@getTrackedCacheKeys',
+                'as' => 'cache.get_tracked_cache_keys'
+            ]);
+            
+            Route::get('clear_cache', [
+                'uses' => 'DashboardController@clearCache',
+                'as' => 'cache.clear_cache'
+            ]);
+        });
+
         Route::group(['prefix' => 'dashboard'], function () {
             Route::get('overview', [
                 'uses' => 'DashboardController@Overview',

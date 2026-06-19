@@ -76,4 +76,55 @@ class DashboardController extends Controller
             ], 500);
         }
     }
+
+    public function getTrackedCacheKeys(): JsonResponse
+    {
+        try {
+            $cacheKeys = $this->dashboardService->getTrackedCacheKeys();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Lấy danh sách cache key thành công.',
+                'count'   => count($cacheKeys),
+                'data'    => $cacheKeys
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error("API Get Tracked Cache Keys Failed: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Đã có lỗi hệ thống xảy ra khi lấy danh sách cache.'
+            ], 500);
+        }
+    }
+
+    public function clearCache(): JsonResponse
+    {
+        try {
+            $user = auth()->user();
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Người dùng chưa được xác thực.'
+                ], 401);
+            }
+
+            $this->dashboardService->cacheService->clearUserCache($user->id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã xóa toàn bộ bộ nhớ đệm (Cache) thành công. Dữ liệu sẽ được làm mới ở lần tải trang tiếp theo.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error("API Clear Cache Failed for User " . (auth()->id() ?? 'unknown') . ": " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Đã có lỗi xảy ra khi xóa bộ nhớ đệm.'
+            ], 500);
+        }
+    }
 }
