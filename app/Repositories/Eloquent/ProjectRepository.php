@@ -20,6 +20,15 @@ class ProjectRepository implements ProjectInterface
     public function getProjectsJson(int $userId): array
     {
         $user = User::find($userId);
-        return $user?->jira_projects_json ?? [];
+
+        if (!$user || !$user->jira_projects_json) {
+            return [];
+        }
+
+        if (is_string($user->jira_projects_json)) {
+            return json_decode($user->jira_projects_json, true) ?? [];
+        }
+
+        return $user->jira_projects_json;
     }
 }

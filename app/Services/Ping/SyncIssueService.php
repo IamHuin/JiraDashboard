@@ -2,17 +2,18 @@
 
 namespace App\Services\Ping;
 
-use App\Repositories\Interfaces\SyncIssueInterface;
-use App\Repositories\Interfaces\ProjectInterface;
-use App\Services\Dashboard\HandleBugRatioService;
 use App\DTO\Project\ProjectDTO;
+use App\Repositories\Interfaces\ProjectInterface;
+use App\Repositories\Interfaces\SyncIssueInterface;
+use App\Services\Dashboard\HandleBugRatioService;
 use Carbon\Carbon;
+use Exception;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Pool;
 use GuzzleHttp\Psr7\Response;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Collection;
 use Log;
 
 class SyncIssueService extends ConnectJiraService
@@ -159,18 +160,18 @@ class SyncIssueService extends ConnectJiraService
         if (base64_decode($clonedUser->jira_password, true) !== false) {
             try {
                 $clonedUser->jira_password = Crypt::decryptString($clonedUser->jira_password);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
             }
         }
 
         $url = "/rest/api/2/project";
-        
+
         $client = $this->initClient($clonedUser);
 
         try {
             $response = $client->getAsync($url)->wait();
             $jiraData = json_decode($response->getBody()->getContents(), true);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error("Jira Sync Projects Failed via Async-Wait: " . $e->getMessage());
             $jiraData = ['error' => $e->getMessage()];
         }
