@@ -34,9 +34,25 @@ class DashboardRepository implements DashboardInterface
         ];
     }
 
-    public function getIssuesByPeriod(string $start, string $end, ?array $projectNames = [], ?string $userName = null): array
+    public function getBugRatioByPeriod(string $start, string $end, ?array $projectNames = [], ?string $userName = null): array
     {
-        $query = DB::table('jira_user_stats')
+        $query = DB::table('jira_bug_ratios')
+            ->whereBetween('period', [$start, $end]);
+
+        if (!empty($projectNames)) {
+            $query->whereIn('project_name', $projectNames);
+        }
+
+        if (!empty($userName)) {
+            $query->where('user_name', $userName);
+        }
+
+        return $query->get()->toArray();
+    }
+
+    public function getSlsxUlnlRatioByPeriod(string $start, string $end, ?array $projectNames = [], ?string $userName = null): array
+    {
+        $query = DB::table('jira_slsx_ulnl_ratios')
             ->whereBetween('period', [$start, $end]);
 
         if (!empty($projectNames)) {

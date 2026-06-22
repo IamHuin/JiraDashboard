@@ -48,8 +48,8 @@ class DashboardService
 
             return $this->dashboardRepo->getOverview([
                 'project_names' => $allowedProjectNames,
-                'period_start'  => $period['start_date'],
-                'period_end'    => $period['end_date'],
+                'period_start' => $period['start_date'],
+                'period_end' => $period['end_date'],
             ]);
         });
 
@@ -89,20 +89,68 @@ class DashboardService
             $this->cacheService->trackKey($user->id, $cacheKey);
 
             return ($period['start_date'] && $period['end_date'])
-                ? $this->dashboardRepo->getIssuesByPeriod($period['start_date'], $period['end_date'], $allowedProjectNames, $userName)
+                ? $this->dashboardRepo->getBugRatioByPeriod($period['start_date'], $period['end_date'], $allowedProjectNames, $userName)
                 : [];
         });
 
         return [
             'success' => true,
-            'data'    => [
-                'user'         => $userName,
+            'data' => [
+                'user' => $userName,
                 'project_names' => $allowedProjectNames,
                 'period_start' => $periodStart,
-                'period_end'   => $periodEnd,
-                'start_date'   => $period['start_date'],
-                'end_date'     => $period['end_date'],
-                'issues'       => $issues,
+                'period_end' => $periodEnd,
+                'start_date' => $period['start_date'],
+                'end_date' => $period['end_date'],
+                'issues' => $issues,
+            ],
+        ];
+    }
+
+    public function getSlsxUlnlRatio(?string $periodStart, ?string $periodEnd, ?string $userName, ?array $projectNames = []): array
+    {
+        $user = auth()->user();
+        if (!$user) return ['success' => false, 'data' => []];
+
+        $period = $this->normalizePeriod($periodStart, $periodEnd);
+        $allowedProjectNames = $this->filterAllowedProjects($projectNames);
+
+        if (empty($allowedProjectNames)) {
+            return [
+                'success' => true,
+                'data' => [
+                    'user' => $userName,
+                    'project_names' => [],
+                    'period_start' => $periodStart,
+                    'period_end' => $periodEnd,
+                    'start_date' => $period['start_date'],
+                    'end_date' => $period['end_date'],
+                    'issues' => [],
+                ],
+            ];
+        }
+
+        $projectHash = md5(json_encode($allowedProjectNames));
+        $cacheKey = "user_{$user->id}_slsx_ulnl_ratio_{$periodStart}_{$periodEnd}_{$userName}_{$projectHash}";
+
+        $issues = Cache::remember($cacheKey, $this->cacheService->getTtl(), function () use ($period, $allowedProjectNames, $userName, $user, $cacheKey) {
+            $this->cacheService->trackKey($user->id, $cacheKey);
+
+            return ($period['start_date'] && $period['end_date'])
+                ? $this->dashboardRepo->getSlsxUlnlRatioByPeriod($period['start_date'], $period['end_date'], $allowedProjectNames, $userName)
+                : [];
+        });
+
+        return [
+            'success' => true,
+            'data' => [
+                'user' => $userName,
+                'project_names' => $allowedProjectNames,
+                'period_start' => $periodStart,
+                'period_end' => $periodEnd,
+                'start_date' => $period['start_date'],
+                'end_date' => $period['end_date'],
+                'issues' => $issues,
             ],
         ];
     }
@@ -159,12 +207,12 @@ class DashboardService
     protected function normalizePeriod(?string $periodStart, ?string $periodEnd): array
     {
         $start = null;
-        $end   = null;
+        $end = null;
 
         if ($periodStart) {
             $carbonStart = Carbon::createFromFormat('m-Y', $periodStart);
             $start = $carbonStart->startOfMonth()->format('Y-m-d H:i:s');
-            $end   = $periodEnd
+            $end = $periodEnd
                 ? Carbon::createFromFormat('m-Y', $periodEnd)->endOfMonth()->format('Y-m-d H:i:s')
                 : $carbonStart->endOfMonth()->format('Y-m-d H:i:s');
         } elseif ($periodEnd) {
@@ -174,7 +222,7 @@ class DashboardService
 
         return [
             'start_date' => $start,
-            'end_date'   => $end,
+            'end_date' => $end,
         ];
     }
 }

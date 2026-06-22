@@ -7,6 +7,7 @@ use App\Repositories\Interfaces\ProjectInterface;
 use App\Repositories\Interfaces\SyncIssueInterface;
 use App\Services\Cache\DashboardCacheService;
 use App\Services\Dashboard\HandleBugRatioService;
+use App\Services\Dashboard\HandleSLSXService;
 use Carbon\Carbon;
 use Exception;
 use GuzzleHttp\Exception\RequestException;
@@ -19,21 +20,24 @@ use Log;
 
 class SyncIssueService extends ConnectJiraService
 {
-    protected $jiraRepo;
-    protected $jiraHandleBug;
+    protected $syncRepo;
+    protected $handleBugRatioService;
+    protected $handleSLSXService;
     protected $projectRepo;
     protected $cacheService;
 
     public function __construct(
-        SyncIssueInterface    $jiraRepo,
-        HandleBugRatioService $jiraHandleBug,
+        SyncIssueInterface    $syncRepo,
+        HandleBugRatioService $handleBugRatioService,
+        HandleSLSXService     $handleSLSXService,
         ProjectInterface      $projectRepo,
         DashboardCacheService $cacheService
     )
     {
         parent::__construct();
-        $this->jiraRepo = $jiraRepo;
-        $this->jiraHandleBug = $jiraHandleBug;
+        $this->syncRepo = $syncRepo;
+        $this->handleBugRatioService = $handleBugRatioService;
+        $this->handleSLSXService = $handleSLSXService;
         $this->projectRepo = $projectRepo;
         $this->cacheService = $cacheService;
     }
@@ -46,7 +50,7 @@ class SyncIssueService extends ConnectJiraService
         $maxResults = $this->maxResults;
         $allIssues = [];
 
-        $fieldsParam = "&fields=project,summary,issuetype,assignee,customfield_11321,customfield_xxx,customfield_yyy,status,created";
+        $fieldsParam = "&fields=project,summary,issuetype,assignee,customfield_11321,customfield_xxx,customfield_11306,status,created";
 
         $firstUrl = "/rest/api/2/search?jql=" . urlencode($jql) . "&startAt=0&maxResults={$maxResults}" . $fieldsParam;
         $firstData = $this->connectToJira($user, $firstUrl);
@@ -105,7 +109,7 @@ class SyncIssueService extends ConnectJiraService
                 'assignee' => $issue['fields']['assignee']['name'] ?? null,
                 'causer' => $issue['fields']['customfield_11321']['name'] ?? null,
                 'ulnl' => $issue['fields']['customfield_xxx'] ?? null,
-                'slsx' => $issue['fields']['customfield_yyy'] ?? null,
+                'slsx' => $issue['fields']['customfield_11306'] ?? null,
                 'status' => $issue['fields']['status']['name'] ?? null,
                 'created' => isset($issue['fields']['created'])
                     ? Carbon::parse($issue['fields']['created'])->format('Y-m-d H:i:s')
@@ -137,7 +141,7 @@ class SyncIssueService extends ConnectJiraService
 
     public function syncFromLastIssues(): void
     {
-        $lastSyncTime = Carbon::parse($this->jiraRepo->getLastSyncTime());
+        $lastSyncTime = Carbon::parse($this->syncRepo->getLastSyncTime());
         $startOfMonth = $lastSyncTime->copy()->startOfMonth()->format('Y-m-d');
         $endDate = Carbon::now()->format('Y-m-d');
 
@@ -195,41 +199,51 @@ class SyncIssueService extends ConnectJiraService
 
         $this->syncAndFetchProjects();
 
-        $this->jiraRepo->saveIssues($issues->toArray());
+        $this->syncRepo->saveIssues($issues->toArray());
 
         $lastSyncTime = $issues->max('created');
-        $this->jiraRepo->updateSyncTime($lastSyncTime);
+        $this->syncRepo->updateSyncTime($lastSyncTime);
 
-        $stats = [];
+        $bugRatios = [];
+        $slsxUlnlRatios = [];
 
         $issuesByPeriod = $issues->groupBy(function ($issue) {
             return Carbon::parse($issue['created'])->startOfMonth()->format('Y-m-d');
         });
 
         foreach ($issuesByPeriod as $period => $periodIssues) {
-            $bugPercent = $this->jiraHandleBug->countBugPercent($periodIssues);
-            foreach ($bugPercent as $stat) {
-                $userName = $stat['user_name'];
+            $bugPercent = $this->handleBugRatioService->countBugPercent($periodIssues);
+            $slsxSum = $this->handleSLSXService->slsxSum($periodIssues);
+            foreach ($bugPercent as $bugRatio) {
+                $userName = $bugRatio['user_name'];
                 $userIssues = $periodIssues->filter(fn($i) => $i['causer'] === $userName || $i['assignee'] === $userName);
-                $ulnl = $userIssues->sum('ulnl');
-                $slsx = $userIssues->sum('slsx');
-                $ratio = $ulnl > 0 ? round(($slsx / $ulnl) * 100, 2) : 0;
 
-                $stats[] = [
+                $bugRatios[] = [
                     'project_name' => $userIssues->first()['projectName'] ?? null,
                     'user_name' => $userName,
-                    'bug_count' => $stat['total_bugs'],
-                    'bug_percent' => $stat['bug_percent'],
-                    'subtask_count' => $stat['total_subtasks'],
-                    'ulnl_count' => $ulnl,
-                    'slsx_count' => $slsx,
-                    'slsx_vs_ulnl_ratio' => $ratio,
+                    'bug_count' => $bugRatio['total_bugs'],
+                    'bug_percent' => $bugRatio['bug_percent'],
+                    'subtask_count' => $bugRatio['total_subtasks'],
                     'period' => $period,
                 ];
             }
+
+            foreach ($slsxSum as $slsx) {
+                $userName = $slsx['username'];
+                $userIssues = $periodIssues->filter(fn($issue) => in_array($issue['issuetype'], ['Bug', 'Sub-task']) && !empty($issue['assignee']));
+
+                $slsxUlnlRatios[] = [
+                    'project_name' => $userIssues->first()['projectName'] ?? null,
+                    'user_name' => $userName,
+                    'slsx_sum' => $slsx['slsx_sum'],
+                    'period' => $period,
+                ];
+            }
+
         }
 
-        $this->jiraRepo->saveUserStats($stats);
+        $this->syncRepo->saveBugRatios($bugRatios);
+        $this->syncRepo->saveSlsxUlnlRatios($slsxUlnlRatios);
 
         $user = Auth::user();
         if ($user) {

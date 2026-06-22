@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('jira_user_stats', function (Blueprint $table) {
+        Schema::create('jira_bug_ratios', function (Blueprint $table) {
             $table->id();
 
             $table->date('period')->comment('Tháng/năm thống kê');
@@ -20,9 +20,6 @@ return new class extends Migration
             $table->integer('subtask_count')->default(0)->comment('Tổng Sub-task');
             $table->integer('bug_count')->default(0)->comment('Tổng Bug');
             $table->decimal('bug_percent', 5, 2)->default(0)->comment('Tỷ lệ % Bug');
-            $table->integer('ulnl_count')->default(0)->comment('Tổng số ULNL');
-            $table->integer('slsx_count')->default(0)->comment('Tổng SLSX');
-            $table->decimal('slsx_vs_ulnl_ratio', 5, 2)->default(0)->comment('Tỷ lệ % SLSX so với ULNL');
 
             $table->timestamps();
         });
@@ -33,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('jira_user_stats');
+        Schema::dropIfExists('jira_bug_ratio');
     }
 };

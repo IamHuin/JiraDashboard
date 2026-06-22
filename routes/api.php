@@ -68,6 +68,11 @@ Route::group(['namespace' => 'App\Http\Controllers'], function () {
                 'as' => 'dashboard.get_bug_ratio'
             ]);
 
+            Route::get('get_slsx_ulnl_ratio', [
+                'uses' => 'DashboardController@getSlsxUlnlRatio',
+                'as' => 'dashboard.get_slsx_ulnl_ratio'
+            ]);
+
             Route::get('projects', [
                 'uses' => 'DashboardController@getProjects',
                 'as' => 'dashboard.projects'
