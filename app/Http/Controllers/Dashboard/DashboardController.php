@@ -4,8 +4,9 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\DTO\Dashboard\DashboardDTO;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\BugRatio\BugRatioRequest;
 use App\Http\Requests\Overview\OverviewRequest;
+use App\Http\Requests\Ratio\BugRatioRequest;
+use App\Http\Requests\Ratio\SlsxUlnlRatioRequest;
 use App\Services\Dashboard\DashboardService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -38,6 +39,22 @@ class DashboardController extends Controller
     {
         $dto = DashboardDTO::fromArray($request->validated());
         $result = $this->dashboardService->getBugRatio(
+            $dto->period_start,
+            $dto->period_end,
+            $dto->user_name,
+            $dto->project_names
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => $result,
+        ]);
+    }
+
+    public function getSlsxUlnlRatio(SlsxUlnlRatioRequest $request)
+    {
+        $dto = DashboardDTO::fromArray($request->validated());
+        $result = $this->dashboardService->getSlsxUlnlRatio(
             $dto->period_start,
             $dto->period_end,
             $dto->user_name,

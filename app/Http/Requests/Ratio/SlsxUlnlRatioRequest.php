@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Requests\BugRatio;
+namespace App\Http\Requests\Ratio;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class BugRatioRequest extends FormRequest
+class SlsxUlnlRatioRequest extends FormRequest
 {
     public function rules(): array
     {
@@ -32,7 +32,7 @@ class BugRatioRequest extends FormRequest
 
     protected function prepareForValidation()
     {
-        if ($this->input('table_id') === 'bug_ratio_myself') {
+        if ($this->input('table_id') === 'slsx_ulnl_ratio_myself') {
             $this->merge([
                 'user_name' => auth()->user()->jira_username,
             ]);

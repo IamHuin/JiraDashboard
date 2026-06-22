@@ -10,5 +10,6 @@ interface SyncIssueInterface
 
     public function getLastSyncTime();
 
-    public function saveUserStats(array $stats);
+    public function saveBugRatios(array $bugRatios);
+    public function saveSlsxUlnlRatios(array $slsxUlnlRatios);
 }

@@ -32,7 +32,7 @@ class SyncIssueRepository implements SyncIssueInterface
 
     public function updateSyncTime($lastSyncTime)
     {
-        DB::table('jira_sync')->updateOrInsert(
+        DB::table('jira_syncs')->updateOrInsert(
             ['id' => 1],
             [
                 'last_sync_time' => $lastSyncTime,
@@ -46,22 +46,37 @@ class SyncIssueRepository implements SyncIssueInterface
         return DB::table('jira_sync')->where('id', 1)->value('last_sync_time');
     }
 
-    public function saveUserStats(array $stats)
+    public function saveBugRatios(array $bugRatios)
     {
-        foreach ($stats as $stat) {
-            DB::table('jira_user_stats')->updateOrInsert(
+        foreach ($bugRatios as $bugRatio) {
+            DB::table('jira_bug_ratios')->updateOrInsert(
                 [
-                    'user_name' => $stat['user_name'],
-                    'period' => $stat['period'],
-                    'project_name' => $stat['project_name'],
+                    'user_name' => $bugRatio['user_name'],
+                    'period' => $bugRatio['period'],
+                    'project_name' => $bugRatio['project_name'],
                 ],
                 [
-                    'bug_count' => $stat['bug_count'],
-                    'bug_percent' => $stat['bug_percent'],
-                    'subtask_count' => $stat['subtask_count'],
-                    'ulnl_count' => $stat['ulnl_count'],
-                    'slsx_count' => $stat['slsx_count'],
-                    'slsx_vs_ulnl_ratio' => $stat['slsx_vs_ulnl_ratio'],
+                    'bug_count' => $bugRatio['bug_count'],
+                    'bug_percent' => $bugRatio['bug_percent'],
+                    'subtask_count' => $bugRatio['subtask_count'],
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ]
+            );
+        }
+    }
+
+    public function saveSlsxUlnlRatios(array $slsxUlnlRatios)
+    {
+        foreach ($slsxUlnlRatios as $slsxUlnlRatio) {
+            DB::table('jira_slsx_ulnl_ratios')->updateOrInsert(
+                [
+                    'user_name' => $slsxUlnlRatio['user_name'],
+                    'period' => $slsxUlnlRatio['period'],
+                    'project_name' => $slsxUlnlRatio['project_name'],
+                ],
+                [
+                    'slsx_sum' => $slsxUlnlRatio['slsx_sum'],
                     'updated_at' => now(),
                     'created_at' => now(),
                 ]
