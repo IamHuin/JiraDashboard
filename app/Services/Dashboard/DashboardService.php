@@ -13,16 +13,19 @@ class DashboardService
     protected DashboardInterface $dashboardRepo;
     protected ProjectInterface $projectRepo;
     public DashboardCacheService $cacheService;
+    protected PaginationService $paginationService;
 
     public function __construct(
         DashboardInterface    $dashboardRepo,
         ProjectInterface      $projectRepo,
-        DashboardCacheService $cacheService
+        DashboardCacheService $cacheService,
+        PaginationService     $paginationService
     )
     {
         $this->dashboardRepo = $dashboardRepo;
         $this->projectRepo = $projectRepo;
         $this->cacheService = $cacheService;
+        $this->paginationService = $paginationService;
     }
 
     public function getOverview(?string $periodStart, ?string $periodEnd, ?array $projectNames = []): array
@@ -64,6 +67,9 @@ class DashboardService
         $user = auth()->user();
         if (!$user) return ['success' => false, 'data' => []];
 
+        $page = (int)request('page', 1);
+        $perPage = (int)request('per_page', 10);
+
         $period = $this->normalizePeriod($periodStart, $periodEnd);
         $allowedProjectNames = $this->filterAllowedProjects($projectNames);
 
@@ -77,20 +83,35 @@ class DashboardService
                     'period_end' => $periodEnd,
                     'start_date' => $period['start_date'],
                     'end_date' => $period['end_date'],
-                    'issues' => [],
+                    'issues' => [
+                        'ratio' => [],
+                        'details' => [
+                            'list' => [],
+                            'meta' => ['total' => 0, 'per_page' => $perPage, 'current_page' => $page, 'last_page' => 1]
+                        ]
+                    ],
                 ],
             ];
         }
 
         $projectHash = md5(json_encode($allowedProjectNames));
-        $cacheKey = "user_{$user->id}_bug_ratio_{$periodStart}_{$periodEnd}_{$userName}_{$projectHash}";
+        $cacheKey = "user_{$user->id}_bug_ratio_{$periodStart}_{$periodEnd}_{$userName}_{$projectHash}_p{$page}_s{$perPage}";
 
-        $issues = Cache::remember($cacheKey, $this->cacheService->getTtl(), function () use ($period, $allowedProjectNames, $userName, $user, $cacheKey) {
+        $issues = Cache::remember($cacheKey, $this->cacheService->getTtl(), function () use ($period, $allowedProjectNames, $userName, $user, $cacheKey, $perPage) {
             $this->cacheService->trackKey($user->id, $cacheKey);
 
-            return ($period['start_date'] && $period['end_date'])
-                ? $this->dashboardRepo->getBugRatioByPeriod($period['start_date'], $period['end_date'], $allowedProjectNames, $userName)
-                : [];
+            if ($period['start_date'] && $period['end_date']) {
+                $ratio = $this->dashboardRepo->getBugRatioByPeriod($period['start_date'], $period['end_date'], $allowedProjectNames, $userName);
+
+                $paginator = $this->dashboardRepo->getListDetail($period['start_date'], $period['end_date'], $userName, 'Bug', $allowedProjectNames, $perPage);
+
+                return [
+                    'ratio' => $ratio,
+                    'details' => $this->paginationService->format($paginator)
+                ];
+            }
+
+            return ['ratio' => [], 'details' => ['list' => [], 'meta' => []]];
         });
 
         return [
@@ -112,6 +133,9 @@ class DashboardService
         $user = auth()->user();
         if (!$user) return ['success' => false, 'data' => []];
 
+        $page = (int)request('page', 1);
+        $perPage = (int)request('per_page', 10);
+
         $period = $this->normalizePeriod($periodStart, $periodEnd);
         $allowedProjectNames = $this->filterAllowedProjects($projectNames);
 
@@ -125,20 +149,35 @@ class DashboardService
                     'period_end' => $periodEnd,
                     'start_date' => $period['start_date'],
                     'end_date' => $period['end_date'],
-                    'issues' => [],
+                    'issues' => [
+                        'ratio' => [],
+                        'details' => [
+                            'list' => [],
+                            'meta' => ['total' => 0, 'per_page' => $perPage, 'current_page' => $page, 'last_page' => 1]
+                        ]
+                    ],
                 ],
             ];
         }
 
         $projectHash = md5(json_encode($allowedProjectNames));
-        $cacheKey = "user_{$user->id}_slsx_ulnl_ratio_{$periodStart}_{$periodEnd}_{$userName}_{$projectHash}";
+        $cacheKey = "user_{$user->id}_slsx_ulnl_ratio_{$periodStart}_{$periodEnd}_{$userName}_{$projectHash}_p{$page}_s{$perPage}";
 
-        $issues = Cache::remember($cacheKey, $this->cacheService->getTtl(), function () use ($period, $allowedProjectNames, $userName, $user, $cacheKey) {
+        $issues = Cache::remember($cacheKey, $this->cacheService->getTtl(), function () use ($period, $allowedProjectNames, $userName, $user, $cacheKey, $perPage) {
             $this->cacheService->trackKey($user->id, $cacheKey);
 
-            return ($period['start_date'] && $period['end_date'])
-                ? $this->dashboardRepo->getSlsxUlnlRatioByPeriod($period['start_date'], $period['end_date'], $allowedProjectNames, $userName)
-                : [];
+            if ($period['start_date'] && $period['end_date']) {
+                $ratio = $this->dashboardRepo->getSlsxUlnlRatioByPeriod($period['start_date'], $period['end_date'], $allowedProjectNames, $userName);
+
+                $paginator = $this->dashboardRepo->getListDetail($period['start_date'], $period['end_date'], $userName, 'Sub-task', $allowedProjectNames, $perPage);
+
+                return [
+                    'ratio' => $ratio,
+                    'details' => $this->paginationService->format($paginator)
+                ];
+            }
+
+            return ['ratio' => [], 'details' => ['list' => [], 'meta' => []]];
         });
 
         return [
