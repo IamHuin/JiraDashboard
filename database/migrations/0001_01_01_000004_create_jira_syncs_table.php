@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('jira_sync', function (Blueprint $table) {
+        Schema::create('jira_syncs', function (Blueprint $table) {
             $table->id();
 
             $table->timestamp('last_sync_time')->nullable()->comment('Thời gian created mới nhất từ Jira');
