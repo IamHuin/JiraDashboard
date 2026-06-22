@@ -3,6 +3,7 @@
 namespace App\Repositories\Eloquent;
 
 use App\Repositories\Interfaces\DashboardInterface;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class DashboardRepository implements DashboardInterface
@@ -66,5 +67,37 @@ class DashboardRepository implements DashboardInterface
         return $query->get()->toArray();
     }
 
+    public function getListDetail(
+        ?string $periodStart,
+        ?string $periodEnd,
+        ?string $username = null,
+        ?string $issueType = null,
+        ?array  $projectNames = [],
+        int     $perPage = 10
+    ): LengthAwarePaginator
+    {
+        $query = DB::table('jira_issues');
 
+        if ($periodStart && $periodEnd) {
+            $query->whereBetween('created_at_jira', [$periodStart, $periodEnd]);
+        }
+
+        if (!empty($projectNames)) {
+            $query->whereIn('project_name', $projectNames);
+        }
+
+        if (!empty($issueType)) {
+            $query->where('issuetype', $issueType);
+        }
+
+        if (!empty($username)) {
+            if ($issueType === 'Bug') {
+                $query->where('causer', $username);
+            } elseif ($issueType === 'Sub-task') {
+                $query->where('assignee', $username);
+            }
+        }
+
+        return $query->paginate($perPage);
+    }
 }
