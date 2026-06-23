@@ -3,6 +3,7 @@
 namespace App\Repositories\Eloquent;
 
 use App\Repositories\Interfaces\DashboardInterface;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
@@ -16,12 +17,10 @@ class DashboardRepository implements DashboardInterface
             $baseQuery->whereIn('project_name', $filters['project_names']);
         }
 
-        if (!empty($filters['period_start'])) {
-            $baseQuery->whereDate('created_at_jira', '>=', $filters['period_start']);
-        }
-
-        if (!empty($filters['period_end'])) {
-            $baseQuery->whereDate('created_at_jira', '<=', $filters['period_end']);
+        if (!empty($filters['period'])) {
+            $date = Carbon::createFromFormat('m-Y', $filters['period']);
+            $baseQuery->whereYear('created_at_jira', $date->year)
+                ->whereMonth('created_at_jira', $date->month);
         }
 
         $totalUsers = (clone $baseQuery)->distinct('assignee')->count('assignee');
@@ -35,41 +34,58 @@ class DashboardRepository implements DashboardInterface
         ];
     }
 
-    public function getBugRatioByPeriod(string $start, string $end, ?array $projectNames = [], ?string $userName = null): array
+    public function getBugRatioByPeriod(string $period, ?array $projectNames = [], ?string $userName = null, ?int $perPage = null): array|LengthAwarePaginator
     {
-        $query = DB::table('jira_bug_ratios')
-            ->whereBetween('period', [$start, $end]);
+        $query = DB::table('jira_bug_ratios');
+
+        if ($period) {
+            $query->where('period', $period);
+        }
+
+        if (!empty($userName)) {
+            $query->where('user_name', $userName);
+        }
 
         if (!empty($projectNames)) {
             $query->whereIn('project_name', $projectNames);
         }
 
-        if (!empty($userName)) {
-            $query->where('user_name', $userName);
+        $query->orderBy('bug_percent', 'desc');
+
+        if (!empty($perPage)) {
+            return $query->paginate($perPage);
         }
 
         return $query->get()->toArray();
     }
 
-    public function getSlsxUlnlRatioByPeriod(string $start, string $end, ?array $projectNames = [], ?string $userName = null): array
+    public function getSlsxUlnlRatioByPeriod(string $period, ?array $projectNames = [], ?string $userName = null, ?int $perPage = null): array|LengthAwarePaginator
     {
-        $query = DB::table('jira_slsx_ulnl_ratios')
-            ->whereBetween('period', [$start, $end]);
+        $query = DB::table('jira_slsx_ulnl_ratios');
+
+        if ($period) {
+            $query->where('period', $period);
+        }
+
+        if (!empty($userName)) {
+            $query->where('user_name', $userName);
+        }
 
         if (!empty($projectNames)) {
             $query->whereIn('project_name', $projectNames);
         }
 
-        if (!empty($userName)) {
-            $query->where('user_name', $userName);
+        $query->orderBy('slsx_vs_ulnl_ratio', 'desc');
+
+        if (!empty($perPage)) {
+            return $query->paginate($perPage);
         }
 
         return $query->get()->toArray();
     }
 
     public function getListDetail(
-        ?string $periodStart,
-        ?string $periodEnd,
+        ?string $period,
         ?string $username = null,
         ?string $issueType = null,
         ?array  $projectNames = [],
@@ -78,8 +94,10 @@ class DashboardRepository implements DashboardInterface
     {
         $query = DB::table('jira_issues');
 
-        if ($periodStart && $periodEnd) {
-            $query->whereBetween('created_at_jira', [$periodStart, $periodEnd]);
+        if ($period) {
+            $date = Carbon::createFromFormat('m-Y', $period);
+            $query->whereYear('created_at_jira', $date->year)
+                ->whereMonth('created_at_jira', $date->month);
         }
 
         if (!empty($projectNames)) {
@@ -97,6 +115,9 @@ class DashboardRepository implements DashboardInterface
                 $query->where('assignee', $username);
             }
         }
+
+        $query->orderBy('created_at_jira', 'asc')
+            ->orderBy('id', 'asc');
 
         return $query->paginate($perPage);
     }

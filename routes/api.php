@@ -1,82 +1,45 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Dashboard\SyncIssueController;
+use App\Http\Controllers\Dashboard\DashboardController;
 
 Route::get('/test', function () {
     return view('welcome');
 });
 
-Route::group(['namespace' => 'App\Http\Controllers'], function () {
+Route::prefix('auth')->group(function () {
+    Route::post('login', [AuthController::class, 'Login'])->name('login');
+    Route::get('logout', [AuthController::class, 'Logout'])->name('logout');
+    Route::get('refresh', [AuthController::class, 'Refresh'])->name('refresh');
+});
 
-    // Auth Routes
-    Route::group(['namespace' => 'Auth'], function () {
-        Route::post('login', [
-            'uses' => 'AuthController@Login',
-            'as' => 'login'
-        ]);
+Route::middleware('auth:api')->prefix('issues')->group(function () {
 
-        Route::get('logout', [
-            'uses' => 'AuthController@Logout',
-            'as' => 'logout'
-        ]);
-
-        Route::get('refresh', [
-            'uses' => 'AuthController@Refresh',
-            'as' => 'refresh'
-        ]);
+    Route::prefix('sync')->group(function () {
+        Route::get('full_issues', [SyncIssueController::class, 'syncFullIssues'])->name('sync.full_issues');
+        Route::get('month_issues', [SyncIssueController::class, 'syncMonthIssues'])->name('sync.month_issues');
+        Route::post('from_last_issues', [SyncIssueController::class, 'syncFromLastIssues'])->name('sync.from_last_issues');
     });
 
-    Route::group(['namespace' => 'Dashboard', 'prefix' => 'issues', 'middleware' => 'auth:api'], function () {
+    Route::prefix('cache')->group(function () {
+        Route::get('get_tracked_cache_keys', [DashboardController::class, 'getTrackedCacheKeys'])->name('cache.get_tracked_cache_keys');
+        Route::get('clear_cache', [DashboardController::class, 'clearCache'])->name('cache.clear_cache');
+    });
 
-        Route::group(['prefix' => 'sync'], function () {
-            Route::get('full_issues', [
-                'uses' => 'SyncIssueController@syncFullIssues',
-                'as' => 'sync.full_issues'
-            ]);
+    Route::prefix('dashboard')->group(function () {
+        Route::get('overview', [DashboardController::class, 'Overview'])->name('dashboard.overview');
+        Route::get('projects', [DashboardController::class, 'getProjects'])->name('dashboard.projects');
 
-            Route::get('month_issues', [
-                'uses' => 'SyncIssueController@syncMonthIssues',
-                'as' => 'sync.month_issues'
-            ]);
-
-            Route::post('from_last_issues', [
-                'uses' => 'SyncIssueController@syncFromLastIssues',
-                'as' => 'sync.from_last_issues'
-            ]);
+        Route::prefix('bug_ratio')->group(function () {
+            Route::get('myself', [DashboardController::class, 'getBugRatioMyself'])->name('bug_ratio.myself');
+            Route::get('leaderboard', [DashboardController::class, 'getBugRatioLeaderboard'])->name('bug_ratio.leaderboard');
         });
 
-        Route::group(['prefix' => 'cache'], function () {
-            Route::get('get_tracked_cache_keys', [
-                'uses' => 'DashboardController@getTrackedCacheKeys',
-                'as' => 'cache.get_tracked_cache_keys'
-            ]);
-            
-            Route::get('clear_cache', [
-                'uses' => 'DashboardController@clearCache',
-                'as' => 'cache.clear_cache'
-            ]);
-        });
-
-        Route::group(['prefix' => 'dashboard'], function () {
-            Route::get('overview', [
-                'uses' => 'DashboardController@Overview',
-                'as' => 'dashboard.overview'
-            ]);
-
-            Route::get('get_bug_ratio', [
-                'uses' => 'DashboardController@getBugRatio',
-                'as' => 'dashboard.get_bug_ratio'
-            ]);
-
-            Route::get('get_slsx_ulnl_ratio', [
-                'uses' => 'DashboardController@getSlsxUlnlRatio',
-                'as' => 'dashboard.get_slsx_ulnl_ratio'
-            ]);
-
-            Route::get('projects', [
-                'uses' => 'DashboardController@getProjects',
-                'as' => 'dashboard.projects'
-            ]);
+        Route::prefix('slsx_ulnl_ratio')->group(function () {
+            Route::get('myself', [DashboardController::class, 'getSlsxUlnlRatioMyself'])->name('slsx_ulnl_ratio.myself');
+            Route::get('leaderboard', [DashboardController::class, 'getSlsxUlnlRatioLeaderboard'])->name('slsx_ulnl_ratio.leaderboard');
         });
     });
 });

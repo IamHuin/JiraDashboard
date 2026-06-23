@@ -208,7 +208,7 @@ class SyncIssueService extends ConnectJiraService
         $slsxUlnlRatios = [];
 
         $issuesByPeriod = $issues->groupBy(function ($issue) {
-            return Carbon::parse($issue['created'])->startOfMonth()->format('Y-m-d');
+            return Carbon::parse($issue['created'])->format('m-Y');
         });
 
         foreach ($issuesByPeriod as $period => $periodIssues) {
