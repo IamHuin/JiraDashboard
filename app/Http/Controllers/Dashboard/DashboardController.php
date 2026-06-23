@@ -20,51 +20,63 @@ class DashboardController extends Controller
         $this->dashboardService = $dashboardService;
     }
 
-    public function overview(OverviewRequest $request)
+    public function overview(OverviewRequest $request): JsonResponse
     {
         $dto = DashboardDTO::fromArray($request->validated());
-        $data = $this->dashboardService->getOverview(
-            $dto->period_start,
-            $dto->period_end,
+        $result = $this->dashboardService->getOverview(
+            $dto->period,
             $dto->project_names
         );
 
-        return response()->json([
-            'success' => true,
-            'data' => $data,
-        ]);
+        return response()->json($result);
     }
 
-    public function getBugRatio(BugRatioRequest $request)
+    public function getBugRatioMyself(BugRatioRequest $request): JsonResponse
     {
         $dto = DashboardDTO::fromArray($request->validated());
-        $result = $this->dashboardService->getBugRatio(
-            $dto->period_start,
-            $dto->period_end,
+        $result = $this->dashboardService->getBugRatioMyself(
+            $dto->period,
             $dto->user_name,
             $dto->project_names
         );
 
-        return response()->json([
-            'success' => true,
-            'data' => $result,
-        ]);
+        return response()->json($result);
     }
 
-    public function getSlsxUlnlRatio(SlsxUlnlRatioRequest $request)
+    public function getBugRatioLeaderboard(BugRatioRequest $request): JsonResponse
     {
         $dto = DashboardDTO::fromArray($request->validated());
-        $result = $this->dashboardService->getSlsxUlnlRatio(
-            $dto->period_start,
-            $dto->period_end,
+        $result = $this->dashboardService->getBugRatioLeaderboard(
+            $dto->period,
             $dto->user_name,
             $dto->project_names
         );
 
-        return response()->json([
-            'success' => true,
-            'data' => $result,
-        ]);
+        return response()->json($result);
+    }
+
+    public function getSlsxUlnlRatioMyself(SlsxUlnlRatioRequest $request): JsonResponse
+    {
+        $dto = DashboardDTO::fromArray($request->validated());
+        $result = $this->dashboardService->getSlsxUlnlRatioMyself(
+            $dto->period,
+            $dto->user_name,
+            $dto->project_names
+        );
+
+        return response()->json($result);
+    }
+
+    public function getSlsxUlnlRatioLeaderboard(SlsxUlnlRatioRequest $request): JsonResponse
+    {
+        $dto = DashboardDTO::fromArray($request->validated());
+        $result = $this->dashboardService->getSlsxUlnlRatioLeaderboard(
+            $dto->period,
+            $dto->user_name,
+            $dto->project_names
+        );
+
+        return response()->json($result);
     }
 
     public function getProjects(): JsonResponse

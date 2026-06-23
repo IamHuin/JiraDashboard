@@ -2,13 +2,15 @@
 
 namespace App\Repositories\Interfaces;
 
-
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 interface DashboardInterface
 {
     public function getOverview(array $filters): array;
-    public function getBugRatioByPeriod(string $start, string $end): array;
-    public function getSlsxUlnlRatioByPeriod(string $start, string $end): array;
-    public function getListDetail(?string $periodStart, ?string $periodEnd, ?string $username = null, ?string $issueType = null, ?array $projectNames = [], int     $perPage = 10): LengthAwarePaginator;
+
+    public function getBugRatioByPeriod(string $period, ?array $projectNames = [], ?string $userName = null, ?int $perPage = null): array|LengthAwarePaginator;
+
+    public function getSlsxUlnlRatioByPeriod(string $period, ?array $projectNames = [], ?string $userName = null, ?int $perPage = null): array|LengthAwarePaginator;
+
+    public function getListDetail(?string $period, ?string $username = null, ?string $issueType = null, ?array $projectNames = [], int $perPage = 10): LengthAwarePaginator;
 }
