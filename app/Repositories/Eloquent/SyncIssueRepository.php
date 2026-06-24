@@ -18,6 +18,7 @@ class SyncIssueRepository implements SyncIssueInterface
                     'issuetype' => $issue['issuetype'] ?? null,
                     'assignee' => $issue['assignee'] ?? null,
                     'causer' => $issue['causer'] ?? null,
+                    'causer_category' => $issue['causer_category'] ?? null,
                     'ulnl' => $issue['ulnl'] ?? null,
                     'slsx' => $issue['slsx'] ?? null,
                     'status' => $issue['status'] ?? null,
@@ -57,6 +58,7 @@ class SyncIssueRepository implements SyncIssueInterface
                 ],
                 [
                     'bug_count' => $bugRatio['bug_count'],
+                    'bug_count_missing' => $bugRatio['bug_count_missing'],
                     'bug_percent' => $bugRatio['bug_percent'],
                     'subtask_count' => $bugRatio['subtask_count'],
                     'updated_at' => now(),

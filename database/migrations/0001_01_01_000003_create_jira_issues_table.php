@@ -19,6 +19,7 @@ return new class extends Migration {
             $table->string('issuetype')->nullable()->comment('Loại issue: Bug hoặc Sub-task');
             $table->string('assignee')->nullable()->comment('Người được assign xử lý issue');
             $table->string('causer')->nullable()->comment('Người gây ra lỗi');
+            $table->string('causer_category')->nullable()->comment('Loại gây ra lỗi');
             $table->string('ulnl')->nullable()->comment('Ước lượng nỗ lực');
             $table->string('slsx')->nullable()->comment('Sản lượng sản xuất');
             $table->string('status')->nullable()->comment('Trạng thái issue');

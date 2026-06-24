@@ -1,0 +1,43 @@
+services:
+  db:
+    image: mariadb:10.4
+    container_name: mariadb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: jira-dashboard
+      MYSQL_USER: root
+      MYSQL_PASSWORD: secret
+    volumes:
+      - db_data_jira_dashboard:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: jira-dashboard
+    restart: always
+    volumes:
+      - .:/var/www/html
+      - ./docker/configs/php/php.ini:/usr/local/etc/php/php.ini
+    user: "1000:1000"
+    depends_on:
+      - db
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+      - ./docker/configs/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+
+volumes:
+  db_data_jira_dashboard:
+    external: true
+    name: mariadb

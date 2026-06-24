@@ -50,7 +50,7 @@ class SyncIssueService extends ConnectJiraService
         $maxResults = $this->maxResults;
         $allIssues = [];
 
-        $fieldsParam = "&fields=project,summary,issuetype,assignee,customfield_11321,customfield_xxx,customfield_11306,status,created";
+        $fieldsParam = "&fields=project,summary,issuetype,assignee,customfield_11321,customfield_xxx,customfield_11306,status,created,customfield_10115";
 
         $firstUrl = "/rest/api/2/search?jql=" . urlencode($jql) . "&startAt=0&maxResults={$maxResults}" . $fieldsParam;
         $firstData = $this->connectToJira($user, $firstUrl);
@@ -108,6 +108,7 @@ class SyncIssueService extends ConnectJiraService
                 'issuetype' => $issue['fields']['issuetype']['name'] ?? null,
                 'assignee' => $issue['fields']['assignee']['name'] ?? null,
                 'causer' => $issue['fields']['customfield_11321']['name'] ?? null,
+                'causer_category' => $issue['fields']['customfield_10115']['value'] ?? null,
                 'ulnl' => $issue['fields']['customfield_xxx'] ?? null,
                 'slsx' => $issue['fields']['customfield_11306'] ?? null,
                 'status' => $issue['fields']['status']['name'] ?? null,
@@ -120,7 +121,8 @@ class SyncIssueService extends ConnectJiraService
 
     public function syncFullIssues(): void
     {
-        $jql = "issuetype in (Bug, Sub-task) ORDER BY summary DESC, updated DESC";
+        $jql = "(issuetype = Bug AND status != Cancelled) OR (issuetype = Sub-task AND status = Done) ORDER BY summary DESC, updated DESC";
+
         $issues = $this->fetchIssuesByJql($jql);
 
         $this->saveAndProcess($issues);
@@ -131,7 +133,7 @@ class SyncIssueService extends ConnectJiraService
         $startDate = Carbon::now()->startOfMonth()->format('Y-m-d');
         $endDate = Carbon::now()->format('Y-m-d');
 
-        $jql = "(issuetype = Bug OR (issuetype = Sub-task AND status = Done)) 
+        $jql = "((issuetype = Bug AND status != Cancelled) OR (issuetype = Sub-task AND status = Done))
         AND created >= '{$startDate}' AND created <= '{$endDate}' 
         ORDER BY created ASC";
 
@@ -145,7 +147,7 @@ class SyncIssueService extends ConnectJiraService
         $startOfMonth = $lastSyncTime->copy()->startOfMonth()->format('Y-m-d');
         $endDate = Carbon::now()->format('Y-m-d');
 
-        $jql = "(issuetype = Bug OR (issuetype = Sub-task AND status = Done)) 
+        $jql = "((issuetype = Bug AND status != Cancelled) OR (issuetype = Sub-task AND status = Done))
         AND created >= '{$startOfMonth}' AND created <= '{$endDate}' 
         ORDER BY created ASC";
 
@@ -222,6 +224,7 @@ class SyncIssueService extends ConnectJiraService
                     'project_name' => $userIssues->first()['projectName'] ?? null,
                     'user_name' => $userName,
                     'bug_count' => $bugRatio['total_bugs'],
+                    'bug_count_missing' => $bugRatio['total_bugs_missing'],
                     'bug_percent' => $bugRatio['bug_percent'],
                     'subtask_count' => $bugRatio['total_subtasks'],
                     'period' => $period,
