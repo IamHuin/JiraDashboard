@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('user_name')->comment('Tên người dùng: causer hoặc assignee');
             $table->integer('subtask_count')->default(0)->comment('Tổng Sub-task');
             $table->integer('bug_count')->default(0)->comment('Tổng Bug');
+            $table->integer('bug_count_missing')->default(0)->comment('Tổng Bug do thiếu thừa tài liệu');
             $table->decimal('bug_percent', 5, 2)->default(0)->comment('Tỷ lệ % Bug');
 
             $table->index(['period', 'project_name'], 'idx_period_project');
