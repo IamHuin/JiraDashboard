@@ -3,9 +3,11 @@
 namespace App\Providers;
 
 use App\Repositories\Eloquent\DashboardRepository;
+use App\Repositories\Eloquent\IssueOverdueRepository;
 use App\Repositories\Eloquent\ProjectRepository;
 use App\Repositories\Eloquent\SyncIssueRepository;
 use App\Repositories\Interfaces\DashboardInterface;
+use App\Repositories\Interfaces\IssueOverdueInterface;
 use App\Repositories\Interfaces\ProjectInterface;
 use App\Repositories\Interfaces\SyncIssueInterface;
 use Illuminate\Support\ServiceProvider;
@@ -20,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(SyncIssueInterface::class, SyncIssueRepository::class);
         $this->app->bind(DashboardInterface::class, DashboardRepository::class);
         $this->app->bind(ProjectInterface::class, ProjectRepository::class);
+        $this->app->bind(IssueOverdueInterface::class, IssueOverdueRepository::class);
     }
 
     /**

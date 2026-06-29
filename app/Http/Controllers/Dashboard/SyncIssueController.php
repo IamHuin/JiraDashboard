@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
-use App\Services\Ping\SyncIssueService;
+use App\Services\Sync\SyncIssueService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 
