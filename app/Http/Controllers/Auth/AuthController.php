@@ -7,9 +7,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\AuthRequest;
 use App\Models\User;
 use App\Services\Ping\ConnectJiraService;
-use App\Services\Ping\SyncIssueService;
-use Illuminate\Support\Facades\Crypt;
+use App\Services\Sync\SyncIssueService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Crypt;
 
 class AuthController extends Controller
 {
