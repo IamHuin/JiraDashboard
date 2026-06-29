@@ -22,7 +22,7 @@ class IssueTransformerService
                 'assignee'        => $issue['fields']['assignee']['name'] ?? null,
                 'causer'          => $issue['fields']['customfield_11321']['name'] ?? null,
                 'causer_category' => $issue['fields']['customfield_10115']['value'] ?? null,
-                'ulnl'            => $issue['fields']['customfield_xxx'] ?? null,
+                'ulnl'            => $issue['fields']['customfield_11323'] ?? null,
                 'slsx'            => $issue['fields']['customfield_11306'] ?? null,
                 'status'          => $issue['fields']['status']['name'] ?? null,
                 'created'         => isset($issue['fields']['created'])
