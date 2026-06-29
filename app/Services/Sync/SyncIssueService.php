@@ -46,7 +46,7 @@ class SyncIssueService extends ConnectJiraService
 
         $maxResults = $this->maxResults;
         $allIssues = [];
-        $fieldsParam = "&fields=project,summary,issuetype,assignee,customfield_11321,customfield_xxx,customfield_11306,status,created,customfield_10115";
+        $fieldsParam = "&fields=project,summary,issuetype,assignee,customfield_11321,customfield_11323,customfield_11306,status,created,customfield_10115";
 
         $firstUrl = "/rest/api/2/search?jql=" . urlencode($jql) . "&startAt=0&maxResults={$maxResults}" . $fieldsParam;
         $firstData = $this->connectToJira($user, $firstUrl);
@@ -102,7 +102,6 @@ class SyncIssueService extends ConnectJiraService
         $startDate = Carbon::now()->startOfMonth()->format('Y-m-d');
         $endDate = Carbon::now()->format('Y-m-d');
         $jql = "issuetype IN (Bug, \"Sub-task\") AND status != Cancelled AND created >= '{$startDate}' AND created <= '{$endDate}' ORDER BY created ASC";
-
         $this->saveAndProcess($this->fetchIssuesByJql($jql));
     }
 

@@ -79,6 +79,8 @@ class SyncIssueRepository implements SyncIssueInterface
                 ],
                 [
                     'slsx_sum' => $slsxUlnlRatio['slsx_sum'],
+                    'ulnl_sum' => $slsxUlnlRatio['ulnl_sum'],
+                    'slsx_vs_ulnl_ratio' => $slsxUlnlRatio['slsx_vs_ulnl_ratio'],
                     'updated_at' => now(),
                     'created_at' => now(),
                 ]

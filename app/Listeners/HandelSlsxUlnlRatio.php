@@ -4,20 +4,20 @@ namespace App\Listeners;
 
 use App\Events\IssuesSync;
 use App\Repositories\Interfaces\SyncIssueInterface;
-use App\Services\Dashboard\HandleSLSXService;
+use App\Services\Dashboard\HandleSlsxUlnlRatioService;
 use Carbon\Carbon;
 
 class HandelSlsxUlnlRatio
 {
-    protected $handleSLSXService;
+    protected $handelSlsxUlnlService;
     protected $syncRepo;
 
     /**
      * Create the event listener.
      */
-    public function __construct(HandleSLSXService $handleSLSXService, SyncIssueInterface $syncRepo)
+    public function __construct(HandleSlsxUlnlRatioService $handelSlsxUlnlService, SyncIssueInterface $syncRepo)
     {
-        $this->handleSLSXService = $handleSLSXService;
+        $this->handelSlsxUlnlService = $handelSlsxUlnlService;
         $this->syncRepo = $syncRepo;
     }
 
@@ -33,10 +33,10 @@ class HandelSlsxUlnlRatio
         });
 
         foreach ($issuesByPeriod as $period => $periodIssues) {
-            $slsxSum = $this->handleSLSXService->slsxSum($periodIssues);
+            $slsxUlnlPercent = $this->handelSlsxUlnlService->slsxUlnlPercent($periodIssues);
 
-            foreach ($slsxSum as $slsx) {
-                $userName = $slsx['username'];
+            foreach ($slsxUlnlPercent as $item) {
+                $userName = $item['username'];
 
                 $userIssues = $periodIssues->filter(function ($issue) use ($userName) {
                     return ($issue['issuetype'] ?? '') === 'Sub-task'
@@ -46,7 +46,9 @@ class HandelSlsxUlnlRatio
                 $slsxUlnlRatios[] = [
                     'project_name' => $userIssues->first()['projectName'] ?? null,
                     'user_name' => $userName,
-                    'slsx_sum' => $slsx['slsx_sum'],
+                    'slsx_sum' => $item['slsx_sum'],
+                    'ulnl_sum' => $item['ulnl_sum'],
+                    'slsx_vs_ulnl_ratio' => $item['slsx_vs_ulnl_ratio'],
                     'period' => $period,
                 ];
             }
