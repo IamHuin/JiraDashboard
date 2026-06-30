@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 class IssueTransformerService
 {
     /**
-     * Biến đổi danh sách Issue thô từ danh sách JQL
+     * Biến đổi danh sách Issue thô sang cấu trúc lưu trữ bảng jira_issues (Flow 1)
      */
     public function transformMany(array $issues): array
     {
@@ -19,7 +19,7 @@ class IssueTransformerService
                 'projectName'     => $issue['fields']['project']['name'] ?? null,
                 'summary'         => $issue['fields']['summary'] ?? null,
                 'issuetype'       => $issue['fields']['issuetype']['name'] ?? null,
-                'assignee'        => $issue['fields']['assignee']['name'] ?? null,
+                'assignee'        => $issue['fields']['assignee']['name'] ?? $issue['fields']['assignee']['displayName'] ?? null,
                 'causer'          => $issue['fields']['customfield_11321']['name'] ?? null,
                 'causer_category' => $issue['fields']['customfield_10115']['value'] ?? null,
                 'ulnl'            => $issue['fields']['customfield_11323'] ?? null,
@@ -33,7 +33,7 @@ class IssueTransformerService
     }
 
     /**
-     * Biến đổi chi tiết single issue từ API Detail và tính toán Overdue
+     * Biến đổi chi tiết single issue từ mảng raw có changelog để tính Overdue (Flow 2)
      */
     public function transformSingle(array $issue): array
     {
@@ -51,10 +51,10 @@ class IssueTransformerService
             'key'       => $key,
             'summary'   => $fields['summary'] ?? null,
             'project'   => $fields['project']['name'] ?? null,
-            'enddate'   => $endDateRaw,
+            'enddate'   => $endDate ? $endDate->format('Y-m-d') : null,
             'status'    => $finalStatus,
             'issueType' => $fields['issuetype']['name'] ?? null,
-            'assignee'  => $fields['assignee']['displayName'] ?? null,
+            'assignee'  => $fields['assignee']['displayName'] ?? $fields['assignee']['name'] ?? null,
         ];
     }
 
@@ -127,6 +127,7 @@ class IssueTransformerService
                         'key'          => $key,
                         'current_time' => $now->toDateTimeString()
                     ]);
+                    return 'Warning';
                 }
             }
         }

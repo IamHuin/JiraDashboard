@@ -19,7 +19,7 @@ class ConnectJiraService
         $this->maxResults = config('services.jira.max_results', 200);
     }
 
-    protected function initClient($user)
+    public function initClient($user)
     {
         if (!$this->client) {
             $this->client = new Client([
