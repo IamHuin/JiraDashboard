@@ -11,7 +11,8 @@ class DashboardRepository implements DashboardInterface
 {
     public function getOverview(array $filters): array
     {
-        $baseQuery = DB::table('jira_issues');
+        $baseQuery = DB::table('jira_issues')
+            ->where('status', 'Done');
 
         if (!empty($filters['project_names'])) {
             $baseQuery->whereIn('project_name', $filters['project_names']);
@@ -118,6 +119,35 @@ class DashboardRepository implements DashboardInterface
 
         $query->orderBy('created_at_jira', 'asc')
             ->orderBy('id', 'asc');
+
+        return $query->paginate($perPage);
+    }
+
+    public function getOverdue(?string $period, ?array $projectNames = [], ?string $username = null, ?string $issueType = null, ?string $status = null, int $perPage = 10): LengthAwarePaginator
+    {
+        $query = DB::table('jira_overdues');
+
+        if ($period) {
+            $query->where('period', $period);
+        }
+
+        if (!empty($projectNames)) {
+            $query->whereIn('project_name', $projectNames);
+        }
+
+        if (!empty($issueType)) {
+            $query->where('issuetype', $issueType);
+        }
+
+        if (!empty($status)) {
+            $query->where('status', $status);
+        }
+
+        if (!empty($username)) {
+            $query->where('assignee', $username);
+        }
+
+        $query->orderBy('enddate', 'desc');
 
         return $query->paginate($perPage);
     }

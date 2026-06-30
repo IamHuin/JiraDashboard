@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\DTO\Dashboard\DashboardDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Overdue\OverdueRequest;
 use App\Http\Requests\Overview\OverviewRequest;
 use App\Http\Requests\Ratio\BugRatioRequest;
 use App\Http\Requests\Ratio\SlsxUlnlRatioRequest;
 use App\Services\Dashboard\DashboardService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 
@@ -24,7 +26,7 @@ class DashboardController extends Controller
     {
         $dto = DashboardDTO::fromArray($request->validated());
         $result = $this->dashboardService->getOverview(
-            $dto->period,
+            Carbon::now()->format('m-Y'),
             $dto->project_names
         );
 
@@ -104,6 +106,20 @@ class DashboardController extends Controller
                 'message' => 'Đã có lỗi hệ thống xảy ra, vui lòng thử lại sau.'
             ], 500);
         }
+    }
+
+    public function getOverdues(OverdueRequest $request): JsonResponse
+    {
+        $dto = DashboardDTO::fromArray($request->validated());
+        $result = $this->dashboardService->getOverdues(
+            $dto->period,
+            $dto->user_name,
+            $dto->project_names,
+            $dto->issuetype,
+            $dto->status
+        );
+
+        return response()->json($result);
     }
 
     public function getTrackedCacheKeys(): JsonResponse
