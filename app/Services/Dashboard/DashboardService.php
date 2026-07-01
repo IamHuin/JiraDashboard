@@ -9,7 +9,6 @@ use App\Repositories\Interfaces\ProjectInterface;
 use App\Services\Cache\DashboardCacheService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class DashboardService
 {
@@ -66,42 +65,6 @@ class DashboardService
         ];
     }
 
-    public function getBugRatioMyself(?string $period, ?string $userName, ?array $projectNames = []): array
-    {
-        $user = auth()->user();
-        if (!$user) return ['success' => false, 'data' => []];
-
-        $page = (int)request('page', PaginateEnum::DEFAULT_PAGE);
-        $perPage = (int)request('per_page', PaginateEnum::DEFAULT_PER_PAGE);
-
-        $allowedProjectNames = $this->filterAllowedProjects($projectNames);
-
-        if (empty($allowedProjectNames)) {
-            return format_dashboard_empty($userName, $period, $page, $perPage);
-        }
-
-        $projectHash = md5(json_encode($allowedProjectNames));
-        $cacheKey = "user_{$user->id}_bug_ratio_myself_{$period}_{$userName}_{$projectHash}_p{$page}_s{$perPage}";
-
-        $issues = Cache::remember($cacheKey, $this->cacheService->getTtl(), function () use ($period, $allowedProjectNames, $userName, $user, $perPage, $cacheKey) {
-            $this->cacheService->trackKey($user->id, $cacheKey);
-
-            if ($period) {
-                $ratio = $this->dashboardRepo->getBugRatioByPeriod($period, $allowedProjectNames, $userName);
-                $paginator = $this->dashboardRepo->getListDetail($period, $userName, 'Bug', $allowedProjectNames, $perPage);
-
-                return [
-                    'ratio' => $ratio,
-                    'details' => $this->paginationService->format($paginator)
-                ];
-            }
-
-            return ['ratio' => [], 'details' => ['list' => [], 'meta' => []]];
-        });
-
-        return format_dashboard_success($userName, $allowedProjectNames, $period, $issues);
-    }
-
     public function getBugRatioLeaderboard(?string $period, ?string $userName, ?array $projectNames = []): array
     {
         $user = auth()->user();
@@ -131,42 +94,6 @@ class DashboardService
             }
 
             return ['details' => ['list' => [], 'meta' => []]];
-        });
-
-        return format_dashboard_success($userName, $allowedProjectNames, $period, $issues);
-    }
-
-    public function getSlsxUlnlRatioMyself(?string $period, ?string $userName, ?array $projectNames = []): array
-    {
-        $user = auth()->user();
-        if (!$user) return ['success' => false, 'data' => []];
-
-        $page = (int)request('page', PaginateEnum::DEFAULT_PAGE);
-        $perPage = (int)request('per_page', PaginateEnum::DEFAULT_PER_PAGE);
-
-        $allowedProjectNames = $this->filterAllowedProjects($projectNames);
-
-        if (empty($allowedProjectNames)) {
-            return format_dashboard_empty($userName, $period, $page, $perPage);
-        }
-
-        $projectHash = md5(json_encode($allowedProjectNames));
-        $cacheKey = "user_{$user->id}_slsx_ulnl_ratio_myself_{$period}_{$userName}_{$projectHash}_p{$page}_s{$perPage}";
-
-        $issues = Cache::remember($cacheKey, $this->cacheService->getTtl(), function () use ($period, $allowedProjectNames, $userName, $user, $perPage, $cacheKey) {
-            $this->cacheService->trackKey($user->id, $cacheKey);
-
-            if ($period) {
-                $ratio = $this->dashboardRepo->getSlsxUlnlRatioByPeriod($period, $allowedProjectNames, $userName);
-                $paginator = $this->dashboardRepo->getListDetail($period, $userName, 'Sub-task', $allowedProjectNames, $perPage);
-
-                return [
-                    'ratio' => $ratio,
-                    'details' => $this->paginationService->format($paginator)
-                ];
-            }
-
-            return ['ratio' => [], 'details' => ['list' => [], 'meta' => []]];
         });
 
         return format_dashboard_success($userName, $allowedProjectNames, $period, $issues);

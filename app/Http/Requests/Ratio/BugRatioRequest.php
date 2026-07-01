@@ -6,15 +6,6 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class BugRatioRequest extends FormRequest
 {
-    protected function prepareForValidation()
-    {
-        if ($this->routeIs('*myself*')) {
-            $this->merge([
-                'user_name' => auth()->user()->jira_display_name ?? null
-            ]);
-        }
-    }
-
     public function rules(): array
     {
         return [

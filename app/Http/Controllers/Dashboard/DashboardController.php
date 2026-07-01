@@ -33,34 +33,10 @@ class DashboardController extends Controller
         return response()->json($result);
     }
 
-    public function getBugRatioMyself(BugRatioRequest $request): JsonResponse
-    {
-        $dto = DashboardDTO::fromArray($request->validated());
-        $result = $this->dashboardService->getBugRatioMyself(
-            $dto->period,
-            $dto->user_name,
-            $dto->project_names
-        );
-
-        return response()->json($result);
-    }
-
     public function getBugRatioLeaderboard(BugRatioRequest $request): JsonResponse
     {
         $dto = DashboardDTO::fromArray($request->validated());
         $result = $this->dashboardService->getBugRatioLeaderboard(
-            $dto->period,
-            $dto->user_name,
-            $dto->project_names
-        );
-
-        return response()->json($result);
-    }
-
-    public function getSlsxUlnlRatioMyself(SlsxUlnlRatioRequest $request): JsonResponse
-    {
-        $dto = DashboardDTO::fromArray($request->validated());
-        $result = $this->dashboardService->getSlsxUlnlRatioMyself(
             $dto->period,
             $dto->user_name,
             $dto->project_names

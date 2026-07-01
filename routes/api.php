@@ -35,12 +35,10 @@ Route::middleware('auth:api')->prefix('issues')->group(function () {
         Route::get('usbudget', [DashboardController::class, 'getUSBudget'])->name('dashboard.usbudget');
 
         Route::prefix('bug_ratio')->group(function () {
-            Route::get('myself', [DashboardController::class, 'getBugRatioMyself'])->name('bug_ratio.myself');
             Route::get('leaderboard', [DashboardController::class, 'getBugRatioLeaderboard'])->name('bug_ratio.leaderboard');
         });
 
         Route::prefix('slsx_ulnl_ratio')->group(function () {
-            Route::get('myself', [DashboardController::class, 'getSlsxUlnlRatioMyself'])->name('slsx_ulnl_ratio.myself');
             Route::get('leaderboard', [DashboardController::class, 'getSlsxUlnlRatioLeaderboard'])->name('slsx_ulnl_ratio.leaderboard');
         });
     });
