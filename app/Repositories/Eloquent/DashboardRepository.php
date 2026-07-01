@@ -11,8 +11,7 @@ class DashboardRepository implements DashboardInterface
 {
     public function getOverview(array $filters): array
     {
-        $baseQuery = DB::table('jira_issues')
-            ->where('status', 'Done');
+        $baseQuery = DB::table('jira_issues');
 
         if (!empty($filters['project_names'])) {
             $baseQuery->whereIn('project_name', $filters['project_names']);
@@ -25,7 +24,10 @@ class DashboardRepository implements DashboardInterface
         }
 
         $totalUsers = (clone $baseQuery)->distinct('assignee')->count('assignee');
-        $totalSubtask = (clone $baseQuery)->where('issuetype', 'Sub-task')->count();
+        $totalSubtask = (clone $baseQuery)->where([
+            'status' => 'Done',
+            'issuetype' => 'Sub-task',
+        ])->count();
         $totalBug = (clone $baseQuery)->where('issuetype', 'Bug')->count();
 
         return [

@@ -26,7 +26,7 @@ class DashboardController extends Controller
     {
         $dto = DashboardDTO::fromArray($request->validated());
         $result = $this->dashboardService->getOverview(
-            Carbon::now()->format('m-Y'),
+            $dto->period,
             $dto->project_names
         );
 
