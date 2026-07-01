@@ -58,8 +58,7 @@ class SyncIssueService extends ConnectJiraService
         $user->jira_password = Crypt::decryptString($user->jira_password);
 
         $maxResults = $this->maxResults ?? 100; // Đảm bảo maxResults tầm 50-100
-        $fieldsParam = "&fields=project,summary,issuetype,assignee,customfield_11321,customfield_11323,customfield_11306,status,created,customfield_10115,customfield_10108";
-
+        $fieldsParam = "&fields=project,summary,issuetype,assignee,customfield_11321,customfield_11323,customfield_11306,status,created,customfield_10115,customfield_10108,subtasks";
         // Đồng bộ sẵn Project trước để tránh trong Loop gọi đi gọi lại
         $this->syncAndFetchProjects();
 
@@ -129,7 +128,6 @@ class SyncIssueService extends ConnectJiraService
     protected function chunkProcess(array $rawIssuesChunk): void
     {
         $collectionChunk = collect($rawIssuesChunk);
-
         // 1. Transform và Save Issues
         $transformedIssues = $this->transformer->transformMany($rawIssuesChunk);
         $this->syncRepo->saveIssues($transformedIssues);
@@ -175,14 +173,23 @@ class SyncIssueService extends ConnectJiraService
         $this->fetchAndProcessIssuesByJql($jql);
     }
 
+//    public function syncMonthIssues(): void
+//    {
+//        $startDate = Carbon::now()->startOfMonth()->format('Y-m-d');
+//        $endDate = Carbon::now()->format('Y-m-d');
+//        $jql = "issuetype IN (Bug, \"Sub-task\", Story, Milestone) AND status != Cancelled AND created >= '{$startDate}' AND created <= '{$endDate}' ORDER BY created ASC";
+//        $this->fetchAndProcessIssuesByJql($jql);
+//    }
+
     public function syncMonthIssues(): void
     {
-        $startDate = Carbon::now()->startOfMonth()->format('Y-m-d');
-        $endDate = Carbon::now()->format('Y-m-d');
-        $jql = "issuetype IN (Bug, \"Sub-task\", Story, Milestone) AND status != Cancelled AND created >= '{$startDate}' AND created <= '{$endDate}' ORDER BY created ASC";
+//        $startDate = Carbon::now()->startOfMonth()->format('Y-m-d');
+//        $endDate = Carbon::now()->format('Y-m-d');
+        $startDate = "2026-06-01";
+        $endDate = "2026-06-02";
+        $jql = "issuetype IN (Story) AND status != Cancelled AND created >= '{$startDate}' AND created <= '{$endDate}' ORDER BY created ASC";
         $this->fetchAndProcessIssuesByJql($jql);
     }
-
     public function syncFromLastIssues(): void
     {
         $lastSyncTime = Carbon::parse($this->syncRepo->getLastSyncTime());

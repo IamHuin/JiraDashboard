@@ -15,4 +15,5 @@ interface DashboardInterface
     public function getListDetail(?string $period, ?string $username = null, ?string $issueType = null, ?array $projectNames = [], int $perPage = 10): LengthAwarePaginator;
 
     public function getOverdue(?string $period, ?array $projectNames = [], ?string $username = null, ?string $issueType = null, ?string $status = null, int $perPage = 10): LengthAwarePaginator;
+    
 }

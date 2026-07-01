@@ -3,10 +3,13 @@
 namespace App\Services\Dashboard;
 
 use App\Enums\PaginateEnum;
+use App\Repositories\Eloquent\USBudgetRepository;
 use App\Repositories\Interfaces\DashboardInterface;
 use App\Repositories\Interfaces\ProjectInterface;
 use App\Services\Cache\DashboardCacheService;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class DashboardService
 {
@@ -14,18 +17,21 @@ class DashboardService
     protected ProjectInterface $projectRepo;
     public DashboardCacheService $cacheService;
     protected PaginationService $paginationService;
+    protected USBudgetRepository $usbudgetRepo;
 
     public function __construct(
         DashboardInterface    $dashboardRepo,
         ProjectInterface      $projectRepo,
         DashboardCacheService $cacheService,
-        PaginationService     $paginationService
+        PaginationService  $paginationService,
+        USBudgetRepository $usbudgetRepo
     )
     {
         $this->dashboardRepo = $dashboardRepo;
         $this->projectRepo = $projectRepo;
         $this->cacheService = $cacheService;
         $this->paginationService = $paginationService;
+        $this->usbudgetRepo = $usbudgetRepo;
     }
 
     public function getOverview(?string $period, ?array $projectNames = []): array
@@ -248,6 +254,41 @@ class DashboardService
         });
 
         return format_dashboard_success($userName, $allowedProjectNames, $period, $issues);
+    }
+
+    public function getUSBudget(?string $period, ?array $projectNames = []): array
+    {
+        $keyStory = $this->usbudgetRepo->getSubtaskKeys($period, $projectNames);
+
+        $USBudget = [];
+        if (empty($keyStory)) {
+            return [];
+        }
+
+        $allStoryKeys = array_keys($keyStory);
+        $allSubtaskKeys = collect($keyStory)->flatten()->unique()->toArray();
+        $allKeys = array_merge($allStoryKeys, $allSubtaskKeys);
+
+        $slsxData = DB::table('jira_issues')
+            ->whereIn('key', $allKeys)
+            ->pluck('slsx', 'key')
+            ->toArray();
+
+        foreach ($keyStory as $storyKey => $subtaskKeys) {
+            $slsxStory = (float)($slsxData[$storyKey] ?? 0);
+
+            $sumSLSXSubTask = 0;
+
+            foreach ($subtaskKeys as $subtaskKey) {
+                $sumSLSXSubTask += (float)($slsxData[$subtaskKey] ?? 0);
+            }
+
+            if ($sumSLSXSubTask > $slsxStory) {
+                $USBudget[] = $storyKey;
+            }
+        }
+
+        return $USBudget;
     }
 
 

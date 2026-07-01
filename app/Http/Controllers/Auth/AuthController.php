@@ -38,7 +38,10 @@ class AuthController extends Controller
 
         $user = User::updateOrCreate(
             ['jira_username' => $dto->jira_username],
-            ['jira_password' => Crypt::encryptString($dto->jira_password)]
+            [
+                'jira_password' => Crypt::encryptString($dto->jira_password),
+                'jira_display_name' => $userData['displayName']
+            ]
         );
 
         $token = auth()->login($user);

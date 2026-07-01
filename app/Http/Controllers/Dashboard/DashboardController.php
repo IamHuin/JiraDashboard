@@ -121,6 +121,17 @@ class DashboardController extends Controller
 
         return response()->json($result);
     }
+    
+    public function getUSBudget(OverviewRequest $request): JsonResponse
+    {
+        $dto = DashboardDTO::fromArray($request->validated());
+        $result = $this->dashboardService->getUSBudget(
+            $dto->period,
+            $dto->project_names
+        );
+
+        return response()->json($result);
+    }
 
     public function getTrackedCacheKeys(): JsonResponse
     {

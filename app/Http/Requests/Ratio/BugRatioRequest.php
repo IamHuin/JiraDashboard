@@ -10,7 +10,7 @@ class BugRatioRequest extends FormRequest
     {
         if ($this->routeIs('*myself*')) {
             $this->merge([
-                'user_name' => auth()->user()->jira_username ?? null
+                'user_name' => auth()->user()->jira_display_name ?? null
             ]);
         }
     }

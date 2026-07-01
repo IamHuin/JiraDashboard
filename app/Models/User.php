@@ -10,7 +10,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 
-#[Fillable(['jira_username', 'jira_password', 'jira_projects_json'])]
+#[Fillable(['jira_username', 'jira_password', 'jira_projects_json', 'jira_display_name'])]
 #[Hidden(['jira_password'])]
 class User extends Authenticatable implements JWTSubject
 {

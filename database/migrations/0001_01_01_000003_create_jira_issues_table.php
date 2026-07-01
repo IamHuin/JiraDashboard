@@ -23,6 +23,7 @@ return new class extends Migration {
             $table->string('ulnl')->nullable()->comment('Ước lượng nỗ lực');
             $table->string('slsx')->nullable()->comment('Sản lượng sản xuất');
             $table->string('status')->nullable()->comment('Trạng thái issue');
+            $table->json('subtask_keys')->nullable()->comment('Danh sách các subtask keys nếu issue là Story');
             $table->timestamp('created_at_jira')->nullable()->comment('Thời gian created từ Jira');
 
             $table->index(['project_name', 'created_at_jira'], 'idx_project_created_at');
