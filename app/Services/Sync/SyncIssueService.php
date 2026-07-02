@@ -172,14 +172,6 @@ class SyncIssueService extends ConnectJiraService
         $jql = 'issuetype IN (Bug, "Sub-task", Story, Milestone) AND status != Cancelled ORDER BY summary DESC, updated DESC';
         $this->fetchAndProcessIssuesByJql($jql);
     }
-
-    public function syncMonthIssues(): void
-    {
-        $startDate = Carbon::now()->startOfMonth()->format('Y-m-d');
-        $endDate = Carbon::now()->format('Y-m-d');
-        $jql = "issuetype IN (Bug, \"Sub-task\", Story, Milestone) AND status != Cancelled AND created >= '{$startDate}' AND created <= '{$endDate}' ORDER BY created ASC";
-        $this->fetchAndProcessIssuesByJql($jql);
-    }
     
     public function syncFromLastIssues(): void
     {
