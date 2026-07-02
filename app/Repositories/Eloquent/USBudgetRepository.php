@@ -4,6 +4,7 @@ namespace App\Repositories\Eloquent;
 
 use App\Repositories\Interfaces\USBudgetInterface;
 use Carbon\Carbon;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class USBudgetRepository implements USBudgetInterface
@@ -35,5 +36,42 @@ class USBudgetRepository implements USBudgetInterface
         }
 
         return $result;
+    }
+
+    public function upsertUSBudget(array $multipleData): void
+    {
+        if (empty($multipleData)) {
+            return;
+        }
+
+        DB::table('jira_usbudgets')
+            ->upsert(
+                $multipleData,
+                ['key'],
+                ['period', 'project_name', 'summary', 'issuetype', 'assignee', 'slsx', 'sumSLSXSubTask', 'ratioSLSX', 'status', 'updated_at']
+            );
+    }
+
+    public function getUSBudget(string $period, ?string $username, ?array $projectNames = [], ?int $perPage = null): LengthAwarePaginator
+    {
+        $query = DB::table('jira_usbudgets')->select([
+            'id', 'key', 'summary', 'issuetype', 'assignee', 'status', 'slsx', 'sumSLSXSubTask', 'ratioSLSX'
+        ]);
+
+        if ($period) {
+            $query->where('period', $period);
+        }
+
+        if (!empty($projectNames)) {
+            $query->where(function ($q) use ($projectNames) {
+                $q->whereRaw("JSON_OVERLAPS(project_name, ?)", [json_encode($projectNames)]);
+            });
+        }
+
+        if (!empty($username)) {
+            $query->where('assignee', 'like', "%{$username}%");
+        }
+
+        return $query->orderBy('ratioSLSX', 'desc')->paginate($perPage);
     }
 }

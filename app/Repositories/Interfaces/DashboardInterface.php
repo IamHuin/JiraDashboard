@@ -8,9 +8,9 @@ interface DashboardInterface
 {
     public function getOverview(array $filters): array;
 
-    public function getBugRatioByPeriod(string $period, ?array $projectNames = [], ?string $userName = null, ?int $perPage = null): array|LengthAwarePaginator;
+    public function getBugRatioByPeriod(string $period, ?array $projectNames = [], ?string $userName = null, ?int $perPage = null): LengthAwarePaginator;
 
-    public function getSlsxUlnlRatioByPeriod(string $period, ?array $projectNames = [], ?string $userName = null, ?int $perPage = null): array|LengthAwarePaginator;
+    public function getSlsxUlnlRatioByPeriod(string $period, ?array $projectNames = [], ?string $userName = null, ?int $perPage = null): LengthAwarePaginator;
     
     public function getOverdue(string $period, ?array $projectNames = [], ?string $username = null, ?string $issueType = null, ?string $status = null, int $perPage = 10): LengthAwarePaginator;
     

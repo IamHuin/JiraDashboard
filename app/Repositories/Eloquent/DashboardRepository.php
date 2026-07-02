@@ -37,7 +37,7 @@ class DashboardRepository implements DashboardInterface
         ];
     }
 
-    public function getBugRatioByPeriod(string $period, ?array $projectNames = [], ?string $userName = null, ?int $perPage = null): array|LengthAwarePaginator
+    public function getBugRatioByPeriod(string $period, ?array $projectNames = [], ?string $userName = null, ?int $perPage = null): LengthAwarePaginator
     {
         $query = DB::table('jira_bug_ratios');
 
@@ -58,7 +58,7 @@ class DashboardRepository implements DashboardInterface
         return $query->paginate($perPage);
     }
 
-    public function getSlsxUlnlRatioByPeriod(string $period, ?array $projectNames = [], ?string $userName = null, ?int $perPage = null): array|LengthAwarePaginator
+    public function getSlsxUlnlRatioByPeriod(string $period, ?array $projectNames = [], ?string $userName = null, ?int $perPage = null): LengthAwarePaginator
     {
         $query = DB::table('jira_slsx_ulnl_ratios');
 

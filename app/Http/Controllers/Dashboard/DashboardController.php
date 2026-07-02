@@ -95,11 +95,12 @@ class DashboardController extends Controller
         return response()->json($result);
     }
 
-    public function getUSBudget(DashboardRequest $request): JsonResponse
+    public function getUSBudgets(DashboardRequest $request): JsonResponse
     {
         $dto = DashboardDTO::fromArray($request->validated());
-        $result = $this->dashboardService->getUSBudget(
+        $result = $this->dashboardService->getUSBudgets(
             $dto->period,
+            $dto->user_name,
             $dto->project_names
         );
 

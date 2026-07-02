@@ -31,7 +31,7 @@ Route::middleware('auth:api')->prefix('issues')->group(function () {
         Route::get('overview', [DashboardController::class, 'Overview'])->name('dashboard.overview');
         Route::get('projects', [DashboardController::class, 'getProjects'])->name('dashboard.projects');
         Route::get('overdue', [DashboardController::class, 'getOverdues'])->name('dashboard.overdues');
-        Route::get('usbudget', [DashboardController::class, 'getUSBudget'])->name('dashboard.usbudget');
+        Route::get('usbudget', [DashboardController::class, 'getUSBudgets'])->name('dashboard.usbudgets');
 
         Route::prefix('leaderboard')->group(function () {
             Route::get('bug_ratio', [DashboardController::class, 'getBugRatioLeaderboard'])->name('leaderboard.bug_ratio');
