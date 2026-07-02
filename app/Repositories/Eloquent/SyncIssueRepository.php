@@ -22,6 +22,7 @@ class SyncIssueRepository implements SyncIssueInterface
                     'ulnl' => $issue['ulnl'] ?? null,
                     'slsx' => $issue['slsx'] ?? null,
                     'status' => $issue['status'] ?? null,
+                    'subtask_keys' => $issue['subtask_keys'] ?? null,
                     'created_at_jira' => $issue['created'] ?? null,
                     'updated_at' => now(),
                     'created_at' => now(),
@@ -44,7 +45,7 @@ class SyncIssueRepository implements SyncIssueInterface
 
     public function getLastSyncTime()
     {
-        return DB::table('jira_sync')->where('id', 1)->value('last_sync_time');
+        return DB::table('jira_syncs')->where('id', 1)->value('last_sync_time');
     }
 
     public function saveBugRatios(array $bugRatios)

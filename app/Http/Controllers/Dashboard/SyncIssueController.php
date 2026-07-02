@@ -33,23 +33,6 @@ class SyncIssueController extends Controller
         }
     }
     
-    public function syncMonthIssues(): JsonResponse
-    {
-        try {
-            $this->jiraSync->syncMonthIssues();
-            return response()->json([
-                'success' => true,
-                'message' => 'Sync month issues completed successfully'
-            ]);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Month sync failed',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-    
     public function syncFromLastIssues(): JsonResponse
     {
         try {

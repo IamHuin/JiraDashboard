@@ -33,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('jira_slsx_ulnl_ratio');
+        Schema::dropIfExists('jira_slsx_ulnl_ratios');
     }
 };

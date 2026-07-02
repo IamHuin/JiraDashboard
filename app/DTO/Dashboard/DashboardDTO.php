@@ -2,11 +2,12 @@
 
 namespace App\DTO\Dashboard;
 
+use Carbon\Carbon;
 use Spatie\DataTransferObject\DataTransferObject;
 
 class DashboardDTO extends DataTransferObject
 {
-    public ?string $period;
+    public string $period;
     public ?string $user_name;
     public ?array $project_names;
     public ?string $issuetype;
@@ -15,7 +16,7 @@ class DashboardDTO extends DataTransferObject
     public static function fromArray(array $data): DashboardDTO
     {
         return new self(
-            period: $data['period'] ?? null,
+            period: $data['period'] ?? Carbon::now()->format('m-Y'),
             user_name: $data['user_name'] ?? null,
             project_names: $data['project_names'] ?? [],
             issuetype: $data['issuetype'] ?? null,

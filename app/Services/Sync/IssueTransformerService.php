@@ -13,18 +13,25 @@ class IssueTransformerService
     public function transformMany(array $issues): array
     {
         return collect($issues)->map(function ($issue) {
+            $issueType = $issue['fields']['issuetype']['name'] ?? null;
+            $subtaskKeys = null;
+            if ($issueType === 'Story' && !empty($issue['fields']['subtasks'])) {
+                $keys = array_column($issue['fields']['subtasks'], 'key');
+                $subtaskKeys = !empty($keys) ? json_encode($keys) : null;
+            }
             return [
                 'key'             => $issue['key'],
                 'projectKey'      => $issue['fields']['project']['key'] ?? null,
                 'projectName'     => $issue['fields']['project']['name'] ?? null,
                 'summary'         => $issue['fields']['summary'] ?? null,
                 'issuetype'       => $issue['fields']['issuetype']['name'] ?? null,
-                'assignee'        => $issue['fields']['assignee']['name'] ?? $issue['fields']['assignee']['displayName'] ?? null,
-                'causer'          => $issue['fields']['customfield_11321']['name'] ?? null,
+                'assignee'        => $issue['fields']['assignee']['displayName'] ?? $issue['fields']['assignee']['name'] ?? null,
+                'causer'          => $issue['fields']['customfield_11321']['displayName'] ?? $issue['fields']['customfield_11321']['name'] ?? null,
                 'causer_category' => $issue['fields']['customfield_10115']['value'] ?? null,
                 'ulnl'            => $issue['fields']['customfield_11323'] ?? null,
                 'slsx'            => $issue['fields']['customfield_11306'] ?? null,
                 'status'          => $issue['fields']['status']['name'] ?? null,
+                'subtask_keys'    => $subtaskKeys,
                 'created'         => isset($issue['fields']['created'])
                     ? Carbon::parse($issue['fields']['created'])->format('Y-m-d H:i:s')
                     : null,

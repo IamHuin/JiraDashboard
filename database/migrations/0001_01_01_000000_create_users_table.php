@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('jira_username')->unique();
             $table->string('jira_password');
             $table->json('jira_projects_json')->nullable();
+            $table->string('jira_display_name')->nullable();
             $table->timestamps();
         });
     }
