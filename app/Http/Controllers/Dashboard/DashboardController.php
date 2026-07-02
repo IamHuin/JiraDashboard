@@ -81,10 +81,10 @@ class DashboardController extends Controller
         }
     }
 
-    public function getOverdues(OverdueRequest $request): JsonResponse
+    public function getOverdueIssues(OverdueRequest $request): JsonResponse
     {
         $dto = DashboardDTO::fromArray($request->validated());
-        $result = $this->dashboardService->getOverdues(
+        $result = $this->dashboardService->getOverdueIssues(
             $dto->period,
             $dto->user_name,
             $dto->project_names,
@@ -94,12 +94,26 @@ class DashboardController extends Controller
 
         return response()->json($result);
     }
-
-    public function getUSBudget(DashboardRequest $request): JsonResponse
+    public function getOverdueLogWork(OverdueRequest $request): JsonResponse
     {
         $dto = DashboardDTO::fromArray($request->validated());
-        $result = $this->dashboardService->getUSBudget(
+        $result = $this->dashboardService->getOverdueLogWork(
             $dto->period,
+            $dto->user_name,
+            $dto->project_names,
+            $dto->issuetype,
+            $dto->statusLogWork
+        );
+
+        return response()->json($result);
+    }
+
+    public function getUSBudgets(DashboardRequest $request): JsonResponse
+    {
+        $dto = DashboardDTO::fromArray($request->validated());
+        $result = $this->dashboardService->getUSBudgets(
+            $dto->period,
+            $dto->user_name,
             $dto->project_names
         );
 

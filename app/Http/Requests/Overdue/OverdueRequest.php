@@ -15,6 +15,7 @@ class OverdueRequest extends FormRequest
             'user_name' => ['nullable', 'string'],
             'issuetype' => ['nullable', 'string'],
             'status' => ['nullable', 'string'],
+            'statusLogWork' => ['nullable', 'string'],
         ];
     }
 
@@ -27,7 +28,8 @@ class OverdueRequest extends FormRequest
             'period.date_format' => 'Period phải là tháng-năm hợp lệ theo định dạng m-Y (ví dụ: 06-2026).',
             'user_name.string' => 'User name phải là một chuỗi ký tự.',
             'issuetype.string' => 'Issue type phải là một chuỗi ký tự.',
-            'status.string' => 'Status phải là một chuỗi ký tự.'
+            'status.string' => 'Status phải là một chuỗi ký tự.',
+            'statusLogWork.string' => 'Status Log Work phải là một chuỗi ký tự.',
         ];
     }
 }

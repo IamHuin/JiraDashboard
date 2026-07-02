@@ -47,13 +47,13 @@ class HandleSlsxUlnlRatioService
             $slsxSum = (float)$issue['slsx_sum'];
             $ulnlSum = (float)$ulnl;
 
-            $ratio = ($slsxSum == 0 || $ulnlSum == 0) ? 0 : ($slsxSum / $ulnlSum) * 100;
+            $ratio = ($slsxSum == 0 || $ulnlSum == 0) ? 0 : round(($slsxSum / $ulnlSum) * 100);
 
             return [
                 'username' => $username,
                 'slsx_sum' => $slsxSum,
                 'ulnl_sum' => $ulnlSum,
-                'slsx_vs_ulnl_ratio' => round($ratio, 2),
+                'slsx_vs_ulnl_ratio' => $ratio,
             ];
         })->values();
     }

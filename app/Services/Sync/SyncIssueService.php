@@ -59,6 +59,7 @@ class SyncIssueService extends ConnectJiraService
 
         $maxResults = $this->maxResults ?? 100; // Đảm bảo maxResults tầm 50-100
         $fieldsParam = "&fields=project,summary,issuetype,assignee,customfield_11321,customfield_11323,customfield_11306,status,created,customfield_10115,customfield_10108,subtasks";
+//        $fieldsParam = "";
         // Đồng bộ sẵn Project trước để tránh trong Loop gọi đi gọi lại
         $this->syncAndFetchProjects();
 
@@ -128,6 +129,7 @@ class SyncIssueService extends ConnectJiraService
     protected function chunkProcess(array $rawIssuesChunk): void
     {
         $collectionChunk = collect($rawIssuesChunk);
+//        Log::info($collectionChunk);
         // 1. Transform và Save Issues
         $transformedIssues = $this->transformer->transformMany($rawIssuesChunk);
         $this->syncRepo->saveIssues($transformedIssues);
@@ -172,7 +174,7 @@ class SyncIssueService extends ConnectJiraService
         $jql = 'issuetype IN (Bug, "Sub-task", Story, Milestone) AND status != Cancelled ORDER BY summary DESC, updated DESC';
         $this->fetchAndProcessIssuesByJql($jql);
     }
-    
+
     public function syncFromLastIssues(): void
     {
         $lastSyncTime = Carbon::parse($this->syncRepo->getLastSyncTime());
@@ -214,7 +216,10 @@ class SyncIssueService extends ConnectJiraService
                     'issuetype'    => $issueType,
                     'assignee'     => $detailData['assignee'] ?? null,
                     'enddate'      => $detailData['enddate'] ?? null,
-                    'status'       => $issueData['fields']['status']['name'] ?? null,
+                    'status'       => $detailData['status'] ?? null,
+                    'statusText' => $detailData['statusText'] ?? null,
+                    'statusLogWork' => $detailData['statusLogWork'] ?? null,
+                    'statusTextLogWork' => $detailData['statusTextLogWork'] ?? null,
                     'created_at'   => now(),
                     'updated_at'   => now(),
                 ];

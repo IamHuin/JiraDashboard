@@ -15,16 +15,18 @@ return new class extends Migration
             $table->id();
 
             $table->string('period')->comment('Tháng/năm thống kê dạng chuỗi m-Y');
-            $table->string('project_name')->nullable()->comment('Tên dự án trên Jira');
+            $table->string('project_name')->default('')->comment('Tên dự án trên Jira');
             $table->string('user_name')->comment('Tên người dùng: causer hoặc assignee');
+
             $table->integer('subtask_count')->default(0)->comment('Tổng Sub-task');
             $table->integer('bug_count')->default(0)->comment('Tổng Bug');
             $table->integer('bug_count_missing')->default(0)->comment('Tổng Bug do thiếu thừa tài liệu');
-            $table->decimal('bug_percent', 5, 2)->default(0)->comment('Tỷ lệ % Bug');
+            $table->integer('bug_percent')->default(0)->comment('Tỷ lệ % Bug');
 
             $table->index(['period', 'project_name'], 'idx_period_project');
-            $table->index(['period', 'user_name', 'project_name'], 'idx_period_user_project');
-            
+
+            $table->unique(['user_name', 'period', 'project_name'], 'uk_user_period_project');
+
             $table->timestamps();
         });
     }
