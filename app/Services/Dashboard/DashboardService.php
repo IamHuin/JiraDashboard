@@ -33,7 +33,7 @@ class DashboardService
         $this->usbudgetRepo = $usbudgetRepo;
     }
 
-    public function getOverview(?string $period, ?array $projectNames = []): array
+    public function getOverview(string $period, ?array $projectNames = []): array
     {
         $user = auth()->user();
         if (!$user) return ['success' => false, 'data' => []];
@@ -65,7 +65,7 @@ class DashboardService
         ];
     }
 
-    public function getBugRatioLeaderboard(?string $period, ?string $userName, ?array $projectNames = []): array
+    public function getBugRatioLeaderboard(string $period, ?string $userName, ?array $projectNames = []): array
     {
         $user = auth()->user();
         if (!$user) return ['success' => false, 'data' => []];
@@ -99,7 +99,7 @@ class DashboardService
         return format_dashboard_success($userName, $allowedProjectNames, $period, $issues);
     }
 
-    public function getSlsxUlnlRatioLeaderboard(?string $period, ?string $userName, ?array $projectNames = []): array
+    public function getSlsxUlnlRatioLeaderboard(string $period, ?string $userName, ?array $projectNames = []): array
     {
         $user = auth()->user();
         if (!$user) return ['success' => false, 'data' => []];
@@ -149,7 +149,7 @@ class DashboardService
         return ['success' => true, 'data' => $projects ?? []];
     }
 
-    public function getOverdues(?string $period, ?string $userName, ?array $projectNames = [], ?string $issuetype = null, ?string $status = null): array
+    public function getOverdues(string $period, ?string $userName, ?array $projectNames = [], ?string $issuetype = null, ?string $status = null): array
     {
         $user = auth()->user();
         if (!$user) return ['success' => false, 'data' => []];
@@ -183,7 +183,7 @@ class DashboardService
         return format_dashboard_success($userName, $allowedProjectNames, $period, $issues);
     }
 
-    public function getUSBudget(?string $period, ?array $projectNames = []): array
+    public function getUSBudget(string $period, ?array $projectNames = []): array
     {
         $keyStory = $this->usbudgetRepo->getSubtaskKeys($period, $projectNames);
 
@@ -198,20 +198,33 @@ class DashboardService
 
         $slsxData = DB::table('jira_issues')
             ->whereIn('key', $allKeys)
-            ->pluck('slsx', 'key')
+            ->select('key', 'slsx', 'summary', 'issuetype', 'status', 'assignee')
+            ->get()
+            ->keyBy('key')
             ->toArray();
 
         foreach ($keyStory as $storyKey => $subtaskKeys) {
-            $slsxStory = (float)($slsxData[$storyKey] ?? 0);
+            $slsxStory = (float)($slsxData[$storyKey]->slsx ?? 0);
 
             $sumSLSXSubTask = 0;
 
             foreach ($subtaskKeys as $subtaskKey) {
-                $sumSLSXSubTask += (float)($slsxData[$subtaskKey] ?? 0);
+                $sumSLSXSubTask += (float)($slsxData[$subtaskKey]->slsx ?? 0);
             }
 
+            $ratioSLSX = round($sumSLSXSubTask - $slsxStory, 3);
+
             if ($sumSLSXSubTask > $slsxStory) {
-                $USBudget[] = $storyKey;
+                $USBudget[] = [
+                    'key' => $storyKey,
+                    'summary' => $slsxData[$storyKey]->summary ?? '',
+                    'issuetype' => $slsxData[$storyKey]->issuetype ?? '',
+                    'status' => $slsxData[$storyKey]->status,
+                    'assignee' => $slsxData[$storyKey]->assignee ?? '',
+                    'slsx' => $slsxStory,
+                    'sumSLSXSubTask' => round($sumSLSXSubTask, 3),
+                    'ratioSLSX' => $ratioSLSX
+                ];
             }
         }
 

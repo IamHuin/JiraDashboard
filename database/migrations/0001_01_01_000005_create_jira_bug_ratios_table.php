@@ -34,6 +34,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('jira_bug_ratio');
+        Schema::dropIfExists('jira_bug_ratios');
     }
 };

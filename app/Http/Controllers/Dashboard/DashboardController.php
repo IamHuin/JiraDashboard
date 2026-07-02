@@ -4,12 +4,9 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\DTO\Dashboard\DashboardDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Dashboard\DashboardRequest;
 use App\Http\Requests\Overdue\OverdueRequest;
-use App\Http\Requests\Overview\OverviewRequest;
-use App\Http\Requests\Ratio\BugRatioRequest;
-use App\Http\Requests\Ratio\SlsxUlnlRatioRequest;
 use App\Services\Dashboard\DashboardService;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 
@@ -22,7 +19,7 @@ class DashboardController extends Controller
         $this->dashboardService = $dashboardService;
     }
 
-    public function overview(OverviewRequest $request): JsonResponse
+    public function overview(DashboardRequest $request): JsonResponse
     {
         $dto = DashboardDTO::fromArray($request->validated());
         $result = $this->dashboardService->getOverview(
@@ -33,7 +30,7 @@ class DashboardController extends Controller
         return response()->json($result);
     }
 
-    public function getBugRatioLeaderboard(BugRatioRequest $request): JsonResponse
+    public function getBugRatioLeaderboard(DashboardRequest $request): JsonResponse
     {
         $dto = DashboardDTO::fromArray($request->validated());
         $result = $this->dashboardService->getBugRatioLeaderboard(
@@ -45,7 +42,7 @@ class DashboardController extends Controller
         return response()->json($result);
     }
 
-    public function getSlsxUlnlRatioLeaderboard(SlsxUlnlRatioRequest $request): JsonResponse
+    public function getSlsxUlnlRatioLeaderboard(DashboardRequest $request): JsonResponse
     {
         $dto = DashboardDTO::fromArray($request->validated());
         $result = $this->dashboardService->getSlsxUlnlRatioLeaderboard(
@@ -97,8 +94,8 @@ class DashboardController extends Controller
 
         return response()->json($result);
     }
-    
-    public function getUSBudget(OverviewRequest $request): JsonResponse
+
+    public function getUSBudget(DashboardRequest $request): JsonResponse
     {
         $dto = DashboardDTO::fromArray($request->validated());
         $result = $this->dashboardService->getUSBudget(

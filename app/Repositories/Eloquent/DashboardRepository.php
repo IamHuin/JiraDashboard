@@ -46,7 +46,7 @@ class DashboardRepository implements DashboardInterface
         }
 
         if (!empty($userName)) {
-            $query->where('user_name', $userName);
+            $query->where('user_name', 'like', "%{$userName}%");
         }
 
         if (!empty($projectNames)) {
@@ -67,7 +67,7 @@ class DashboardRepository implements DashboardInterface
         }
 
         if (!empty($userName)) {
-            $query->where('user_name', $userName);
+            $query->where('user_name', 'like', "%{$userName}%");
         }
 
         if (!empty($projectNames)) {
@@ -79,7 +79,7 @@ class DashboardRepository implements DashboardInterface
         return $query->paginate($perPage);
     }
 
-    public function getOverdue(?string $period, ?array $projectNames = [], ?string $username = null, ?string $issueType = null, ?string $status = null, int $perPage = 10): LengthAwarePaginator
+    public function getOverdue(string $period, ?array $projectNames = [], ?string $username = null, ?string $issueType = null, ?string $status = null, int $perPage = 10): LengthAwarePaginator
     {
         $query = DB::table('jira_overdues');
 
@@ -100,11 +100,10 @@ class DashboardRepository implements DashboardInterface
         }
 
         if (!empty($username)) {
-            $query->where('assignee', $username);
+            $query->where('assignee', 'like', "%{$username}%");
         }
 
         $query->orderBy('enddate', 'desc');
-
         return $query->paginate($perPage);
     }
 }
