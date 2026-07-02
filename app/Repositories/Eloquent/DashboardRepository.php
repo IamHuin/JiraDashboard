@@ -39,7 +39,8 @@ class DashboardRepository implements DashboardInterface
 
     public function getBugRatioByPeriod(string $period, ?array $projectNames = [], ?string $userName = null, ?int $perPage = null): LengthAwarePaginator
     {
-        $query = DB::table('jira_bug_ratios');
+        $query = DB::table('jira_bug_ratios')
+            ->select('id', 'user_name', 'subtask_count', 'bug_count', 'bug_count_missing', 'bug_percent');
 
         if ($period) {
             $query->where('period', $period);
@@ -60,7 +61,8 @@ class DashboardRepository implements DashboardInterface
 
     public function getSlsxUlnlRatioByPeriod(string $period, ?array $projectNames = [], ?string $userName = null, ?int $perPage = null): LengthAwarePaginator
     {
-        $query = DB::table('jira_slsx_ulnl_ratios');
+        $query = DB::table('jira_slsx_ulnl_ratios')
+            ->select('id', 'user_name', 'ulnl_sum', 'slsx_sum', 'slsx_vs_ulnl_ratio');
 
         if ($period) {
             $query->where('period', $period);
@@ -81,7 +83,8 @@ class DashboardRepository implements DashboardInterface
 
     public function getOverdue(string $period, ?array $projectNames = [], ?string $username = null, ?string $issueType = null, ?string $status = null, int $perPage = 10): LengthAwarePaginator
     {
-        $query = DB::table('jira_overdues');
+        $query = DB::table('jira_overdues')
+            ->select('id', 'key', 'summary', 'issuetype', 'assignee', 'status', 'enddate', 'statusText');
 
         if ($period) {
             $query->where('period', $period);

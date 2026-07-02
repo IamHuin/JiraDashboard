@@ -214,7 +214,8 @@ class SyncIssueService extends ConnectJiraService
                     'issuetype'    => $issueType,
                     'assignee'     => $detailData['assignee'] ?? null,
                     'enddate'      => $detailData['enddate'] ?? null,
-                    'status'       => $issueData['fields']['status']['name'] ?? null,
+                    'statusText'  => $detailData['statusText'] ?? null,
+                    'status'       => $detailData['status'] ?? null,
                     'created_at'   => now(),
                     'updated_at'   => now(),
                 ];

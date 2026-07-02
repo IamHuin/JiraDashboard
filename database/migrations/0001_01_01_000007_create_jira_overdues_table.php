@@ -21,6 +21,7 @@ return new class extends Migration {
             $table->string('assignee', 100)->nullable()->comment('Tên người được giao thực hiện công việc');
             $table->string('status', 50)->comment('Trạng thái công việc sau tính toán logic (Done, In Progress hoặc Overdue)');
             $table->date('enddate')->nullable()->comment('Hạn chót hoàn thành công việc (Y-m-d)');
+            $table->string('statusText', 50)->comment('Trạng thái công việc thực tế');
 
             $table->timestamps();
 

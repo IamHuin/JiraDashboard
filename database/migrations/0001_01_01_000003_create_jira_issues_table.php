@@ -28,7 +28,7 @@ return new class extends Migration {
 
             $table->index(['project_name', 'created_at_jira'], 'idx_project_created_at');
             $table->index(['project_name', 'created_at_jira', 'assignee'], 'idx_issues_project_date_assignee');
-            
+
             $table->timestamps();
         });
     }

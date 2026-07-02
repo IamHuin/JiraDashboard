@@ -9,26 +9,41 @@ class SyncIssueRepository implements SyncIssueInterface
 {
     public function saveIssues(array $issues)
     {
-        foreach ($issues as $issue) {
-            DB::table('jira_issues')->updateOrInsert(
-                ['key' => $issue['key']],
-                [
-                    'project_name' => $issue['projectName'] ?? null,
-                    'summary' => $issue['summary'] ?? null,
-                    'issuetype' => $issue['issuetype'] ?? null,
-                    'assignee' => $issue['assignee'] ?? null,
-                    'causer' => $issue['causer'] ?? null,
-                    'causer_category' => $issue['causer_category'] ?? null,
-                    'ulnl' => $issue['ulnl'] ?? null,
-                    'slsx' => $issue['slsx'] ?? null,
-                    'status' => $issue['status'] ?? null,
-                    'subtask_keys' => $issue['subtask_keys'] ?? null,
-                    'created_at_jira' => $issue['created'] ?? null,
-                    'updated_at' => now(),
-                    'created_at' => now(),
-                ]
-            );
+        if (empty($issues)) {
+            return;
         }
+
+        $now = now();
+        $bulkData = [];
+
+        foreach ($issues as $issue) {
+            $bulkData[] = [
+                'key'             => $issue['key'],
+                'project_name'    => $issue['projectName'] ?? '',
+                'summary'         => $issue['summary'] ?? null,
+                'issuetype'       => $issue['issuetype'] ?? null,
+                'assignee'        => $issue['assignee'] ?? null,
+                'causer'          => $issue['causer'] ?? null,
+                'causer_category' => $issue['causer_category'] ?? null,
+                'ulnl'            => $issue['ulnl'] ?? null,
+                'slsx'            => $issue['slsx'] ?? null,
+                'status'          => $issue['status'] ?? null,
+                'subtask_keys'    => $issue['subtask_keys'] ?? null,
+                'created_at_jira' => $issue['created'] ?? null,
+                'created_at'      => $now,
+                'updated_at'      => $now,
+            ];
+        }
+
+        DB::table('jira_issues')->upsert(
+            $bulkData,
+            ['key'],
+            [        
+                'project_name', 'summary', 'issuetype', 'assignee',
+                'causer', 'causer_category', 'ulnl', 'slsx',
+                'status', 'subtask_keys', 'created_at_jira', 'updated_at'
+            ]
+        );
     }
 
 
@@ -50,42 +65,60 @@ class SyncIssueRepository implements SyncIssueInterface
 
     public function saveBugRatios(array $bugRatios)
     {
-        foreach ($bugRatios as $bugRatio) {
-            DB::table('jira_bug_ratios')->updateOrInsert(
-                [
-                    'user_name' => $bugRatio['user_name'],
-                    'period' => $bugRatio['period'],
-                    'project_name' => $bugRatio['project_name'],
-                ],
-                [
-                    'bug_count' => $bugRatio['bug_count'],
-                    'bug_count_missing' => $bugRatio['bug_count_missing'],
-                    'bug_percent' => $bugRatio['bug_percent'],
-                    'subtask_count' => $bugRatio['subtask_count'],
-                    'updated_at' => now(),
-                    'created_at' => now(),
-                ]
-            );
+        if (empty($bugRatios)) {
+            return;
         }
+
+        $now = now();
+        $bulkData = [];
+
+        foreach ($bugRatios as $bugRatio) {
+            $bulkData[] = [
+                'user_name'         => $bugRatio['user_name'],
+                'period'            => $bugRatio['period'],
+                'project_name'      => $bugRatio['project_name'] ?? '',
+                'bug_count'         => $bugRatio['bug_count'] ?? 0,
+                'bug_count_missing' => $bugRatio['bug_count_missing'] ?? 0,
+                'bug_percent'       => $bugRatio['bug_percent'] ?? 0,
+                'subtask_count'     => $bugRatio['subtask_count'] ?? 0,
+                'created_at'        => $now,
+                'updated_at'        => $now,
+            ];
+        }
+
+        DB::table('jira_bug_ratios')->upsert(
+            $bulkData,
+            ['user_name', 'period', 'project_name'],
+            ['bug_count', 'bug_count_missing', 'bug_percent', 'subtask_count', 'updated_at']
+        );
     }
 
     public function saveSlsxUlnlRatios(array $slsxUlnlRatios)
     {
-        foreach ($slsxUlnlRatios as $slsxUlnlRatio) {
-            DB::table('jira_slsx_ulnl_ratios')->updateOrInsert(
-                [
-                    'user_name' => $slsxUlnlRatio['user_name'],
-                    'period' => $slsxUlnlRatio['period'],
-                    'project_name' => $slsxUlnlRatio['project_name'],
-                ],
-                [
-                    'slsx_sum' => $slsxUlnlRatio['slsx_sum'],
-                    'ulnl_sum' => $slsxUlnlRatio['ulnl_sum'],
-                    'slsx_vs_ulnl_ratio' => $slsxUlnlRatio['slsx_vs_ulnl_ratio'],
-                    'updated_at' => now(),
-                    'created_at' => now(),
-                ]
-            );
+        if (empty($slsxUlnlRatios)) {
+            return;
         }
+
+        $now = now();
+        $bulkData = [];
+
+        foreach ($slsxUlnlRatios as $ratio) {
+            $bulkData[] = [
+                'user_name'          => $ratio['user_name'],
+                'period'             => $ratio['period'],
+                'project_name'       => $ratio['project_name'] ?? '',
+                'slsx_sum'           => $ratio['slsx_sum'] ?? 0,
+                'ulnl_sum'           => $ratio['ulnl_sum'] ?? 0,
+                'slsx_vs_ulnl_ratio' => $ratio['slsx_vs_ulnl_ratio'] ?? 0,
+                'created_at'         => $now,
+                'updated_at'         => $now,
+            ];
+        }
+
+        DB::table('jira_slsx_ulnl_ratios')->upsert(
+            $bulkData,
+            ['user_name', 'period', 'project_name'],
+            ['slsx_sum', 'ulnl_sum', 'slsx_vs_ulnl_ratio', 'updated_at']
+        );
     }
 }

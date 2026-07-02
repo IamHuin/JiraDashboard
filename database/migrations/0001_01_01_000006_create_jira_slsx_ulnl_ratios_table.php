@@ -15,15 +15,17 @@ return new class extends Migration
             $table->id();
 
             $table->string('period')->comment('Tháng/năm thống kê dạng chuỗi m-Y');
-            $table->string('project_name')->nullable()->comment('Tên dự án trên Jira');
+            $table->string('project_name')->default('')->comment('Tên dự án trên Jira');
             $table->string('user_name')->comment('Tên người dùng: causer hoặc assignee');
+
             $table->decimal('ulnl_sum', 10, 3)->default(0)->comment('Tổng ULNL');
             $table->decimal('slsx_sum', 10, 3)->default(0)->comment('Tổng SLSX');
             $table->integer('slsx_vs_ulnl_ratio')->default(0)->comment('Tỷ lệ % SLSX so với ULNL');
 
             $table->index(['period', 'project_name'], 'idx_period_project');
-            $table->index(['period', 'user_name', 'project_name'], 'idx_period_user_project');
-            
+
+            $table->unique(['user_name', 'period', 'project_name'], 'uk_user_period_project_slsx');
+
             $table->timestamps();
         });
     }
