@@ -20,7 +20,7 @@ return new class extends Migration
             $table->integer('subtask_count')->default(0)->comment('Tổng Sub-task');
             $table->integer('bug_count')->default(0)->comment('Tổng Bug');
             $table->integer('bug_count_missing')->default(0)->comment('Tổng Bug do thiếu thừa tài liệu');
-            $table->decimal('bug_percent', 5, 2)->default(0)->comment('Tỷ lệ % Bug');
+            $table->integer('bug_percent')->default(0)->comment('Tỷ lệ % Bug');
 
             $table->index(['period', 'project_name'], 'idx_period_project');
             $table->index(['period', 'user_name', 'project_name'], 'idx_period_user_project');

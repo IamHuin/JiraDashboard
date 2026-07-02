@@ -62,7 +62,7 @@ class HandleBugRatioService
             $subtaskCount = $subTaskStats->get($userName)['total_subtasks'] ?? 0;
             $missingCount = $bugMissingStats->get($userName)['total_bugs_missing'] ?? 0;
 
-            $percent = $subtaskCount > 0 ? round(($bug['total_bugs'] / $subtaskCount) * 100, 2) : 0;
+            $percent = $subtaskCount > 0 ? round(($bug['total_bugs'] / $subtaskCount) * 100) : 0;
 
             return [
                 'user_name'          => $userName,

@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('user_name')->comment('Tên người dùng: causer hoặc assignee');
             $table->decimal('ulnl_sum', 10, 3)->default(0)->comment('Tổng ULNL');
             $table->decimal('slsx_sum', 10, 3)->default(0)->comment('Tổng SLSX');
-            $table->decimal('slsx_vs_ulnl_ratio', 5, 2)->default(0)->comment('Tỷ lệ % SLSX so với ULNL');
+            $table->integer('slsx_vs_ulnl_ratio')->default(0)->comment('Tỷ lệ % SLSX so với ULNL');
 
             $table->index(['period', 'project_name'], 'idx_period_project');
             $table->index(['period', 'user_name', 'project_name'], 'idx_period_user_project');

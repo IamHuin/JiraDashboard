@@ -88,9 +88,11 @@ class DashboardService
             if ($period) {
                 $paginator = $this->dashboardRepo->getBugRatioByPeriod($period, $allowedProjectNames, $userName, $perPage);
 
-                return [
+                $data = [
                     'details' => $this->paginationService->format($paginator)
                 ];
+
+                return json_decode(json_encode($data), true);
             }
 
             return ['details' => ['list' => [], 'meta' => []]];
@@ -122,9 +124,11 @@ class DashboardService
             if ($period) {
                 $paginator = $this->dashboardRepo->getSlsxUlnlRatioByPeriod($period, $allowedProjectNames, $userName, $perPage);
 
-                return [
+                $data = [
                     'details' => $this->paginationService->format($paginator)
                 ];
+
+                return json_decode(json_encode($data), true);
             }
 
             return ['details' => ['list' => [], 'meta' => []]];
@@ -172,9 +176,11 @@ class DashboardService
             if ($period) {
                 $paginator = $this->dashboardRepo->getOverdue($period, $allowedProjectNames, $userName, $issuetype, $status, $perPage);
 
-                return [
+                $data = [
                     'details' => $this->paginationService->format($paginator)
                 ];
+
+                return json_decode(json_encode($data), true);
             }
 
             return ['details' => ['list' => [], 'meta' => []]];
