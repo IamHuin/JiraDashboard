@@ -12,6 +12,7 @@ interface DashboardInterface
 
     public function getSlsxUlnlRatioByPeriod(string $period, ?array $projectNames = [], ?string $userName = null, ?int $perPage = null): LengthAwarePaginator;
     
-    public function getOverdue(string $period, ?array $projectNames = [], ?string $username = null, ?string $issueType = null, ?string $status = null, int $perPage = 10): LengthAwarePaginator;
+    public function getOverdueIssues(string $period, ?array $projectNames = [], ?string $username = null, ?string $issueType = null, ?string $status = null, int $perPage = 10): LengthAwarePaginator;
     
+    public function getOverdueLogWork(string $period, ?array $projectNames = [], ?string $username = null, ?string $issueType = null, ?string $statusLogWork = null, int $perPage = 10): LengthAwarePaginator;
 }

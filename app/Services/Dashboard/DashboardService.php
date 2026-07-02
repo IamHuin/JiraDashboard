@@ -153,7 +153,7 @@ class DashboardService
         return ['success' => true, 'data' => $projects ?? []];
     }
 
-    public function getOverdues(string $period, ?string $userName, ?array $projectNames = [], ?string $issuetype = null, ?string $status = null): array
+    public function getOverdueIssues(string $period, ?string $userName, ?array $projectNames = [], ?string $issuetype = null, ?string $status = null): array
     {
         $user = auth()->user();
         if (!$user) return ['success' => false, 'data' => []];
@@ -174,7 +174,43 @@ class DashboardService
             $this->cacheService->trackKey($user->id, $cacheKey);
 
             if ($period) {
-                $paginator = $this->dashboardRepo->getOverdue($period, $allowedProjectNames, $userName, $issuetype, $status, $perPage);
+                $paginator = $this->dashboardRepo->getOverdueIssues($period, $allowedProjectNames, $userName, $issuetype, $status, $perPage);
+
+                $data = [
+                    'details' => $this->paginationService->format($paginator)
+                ];
+
+                return json_decode(json_encode($data), true);
+            }
+
+            return ['details' => ['list' => [], 'meta' => []]];
+        });
+
+        return format_dashboard_success($userName, $allowedProjectNames, $period, $issues);
+    }
+
+    public function getOverdueLogWork(string $period, ?string $userName, ?array $projectNames = [], ?string $issuetype = null, ?string $statusLogWork = null): array
+    {
+        $user = auth()->user();
+        if (!$user) return ['success' => false, 'data' => []];
+
+        $page = (int)request('page', PaginateEnum::DEFAULT_PAGE);
+        $perPage = (int)request('per_page', PaginateEnum::DEFAULT_PER_PAGE);
+
+        $allowedProjectNames = $this->filterAllowedProjects($projectNames);
+
+        if (empty($allowedProjectNames)) {
+            return format_dashboard_empty($userName, $period, $page, $perPage);
+        }
+
+        $projectHash = md5(json_encode($allowedProjectNames));
+        $cacheKey = "user_{$user->id}_overdues_{$period}_{$userName}_{$issuetype}_{$statusLogWork}_{$projectHash}_p{$page}_s{$perPage}";
+
+        $issues = Cache::remember($cacheKey, $this->cacheService->getTtl(), function () use ($period, $allowedProjectNames, $userName, $issuetype, $statusLogWork, $perPage, $user, $cacheKey) {
+            $this->cacheService->trackKey($user->id, $cacheKey);
+
+            if ($period) {
+                $paginator = $this->dashboardRepo->getOverdueLogWork($period, $allowedProjectNames, $userName, $issuetype, $statusLogWork, $perPage);
 
                 $data = [
                     'details' => $this->paginationService->format($paginator)
@@ -266,7 +302,6 @@ class DashboardService
         if (!empty($USBudget)) {
             $this->usbudgetRepo->upsertUSBudget($USBudget);
         }
-        unset($USBudget);
     }
 
 

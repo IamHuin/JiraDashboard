@@ -16,7 +16,7 @@ class IssueOverdueRepository implements IssueOverdueInterface
         DB::table('jira_overdues')->upsert(
             $multipleData,
             ['key'],
-            ['period', 'project_name', 'summary', 'issuetype', 'assignee', 'enddate', 'statusText', 'status', 'updated_at']
+            ['period', 'project_name', 'summary', 'issuetype', 'assignee', 'enddate', 'status', 'statusText', 'statusLogWork', 'statusTextLogWork', 'updated_at']
         );
     }
 }

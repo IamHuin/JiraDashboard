@@ -51,7 +51,10 @@ class IssueTransformerService
 
         $endDate = $endDateRaw ? Carbon::parse($endDateRaw, 'Asia/Ho_Chi_Minh')->endOfDay() : null;
         $doneCreatedAt = $this->getLatestDoneDate($currentStatus, $issue['changelog']['histories'] ?? []);
-
+        if (($issue['fields']['issuetype']['name'] === 'Sub-task')) {
+            $logWorkDateDone = $this->getLogWorkDone($issue['changelog']['histories'] ?? []);
+            $finalLogWork = $this->calculateFinalLogWork($key, $endDate, $logWorkDateDone, $currentStatus);
+        }
         $finalStatus = $this->calculateFinalStatus($key, $endDate, $doneCreatedAt, $currentStatus);
 
         return [
@@ -61,6 +64,8 @@ class IssueTransformerService
             'enddate'    => $endDate ? $endDate->format('Y-m-d') : null,
             'status'     => $finalStatus['current_status'] ?? null,
             'statusText' => $finalStatus['status_text'] ?? null,
+            'statusLogWork' => isset($finalLogWork['current_status']) ? $finalLogWork['current_status'] : null,
+            'statusTextLogWork' => isset($finalLogWork['status_text']) ? $finalLogWork['status_text'] : null,
             'issueType'  => $fields['issuetype']['name'] ?? null,
             'assignee'   => $fields['assignee']['displayName'] ?? $fields['assignee']['name'] ?? null,
         ];
@@ -100,6 +105,82 @@ class IssueTransformerService
         return $doneCreatedAt;
     }
 
+    private function getLogWorkDone(array $histories): ?Carbon
+    {
+        $latestLogWorkDate = null;
+
+        foreach ($histories as $log) {
+            if (isset($log['items'])) {
+                foreach ($log['items'] as $item) {
+                    if (isset($item['field']) && strtolower($item['field']) === 'WORKLOGID') {
+                        if (isset($log['created'])) {
+                            $logCreated = Carbon::parse($log['created'], 'Asia/Ho_Chi_Minh');
+                            if ($latestLogWorkDate === null || $logCreated->greaterThan($latestLogWorkDate)) {
+                                $latestLogWorkDate = $logCreated;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return $latestLogWorkDate;
+    }
+
+    private function calculateFinalLogWork(?string $key, ?Carbon $endDate, ?Carbon $logWorkDateDone, ?string $currentStatus): array
+    {
+        $statusText = null;
+        if (!$endDate) {
+            return [
+                'current_status' => $currentStatus,
+                'status_text' => 'Chưa có thời hạn',
+            ];
+        }
+
+        if ($logWorkDateDone) {
+            if ($logWorkDateDone->greaterThan($endDate)) {
+                Log::info('Thông báo: Issue này đã quá hạn', [
+                    'key' => $key,
+                    'enddate' => $endDate->toDateTimeString(),
+                    'enddate_last' => $logWorkDateDone->toDateTimeString()
+                ]);
+
+                $currentStatus = 'Overdue';
+                $statusText = "Quá hạn " . $this->formatDetailedDuration($endDate, $logWorkDateDone);
+            } else {
+                $days = $logWorkDateDone->startOfDay()->diffInDays($endDate->startOfDay());
+                $statusText = $days === 0 ? "Đúng thời hạn" : "Còn " . $this->formatDetailedDuration($logWorkDateDone, $endDate);
+            }
+        } else {
+            $now = Carbon::now('Asia/Ho_Chi_Minh');
+            if ($now->greaterThan($endDate)) {
+                Log::info('Thông báo: Issue này đã quá hạn', [
+                    'key' => $key,
+                    'current_time' => $now->toDateTimeString()
+                ]);
+
+                $currentStatus = 'Missing';
+                $statusText = "Thiếu log work (Quá hạn " . $this->formatDetailedDuration($endDate, $now) . ")";
+            } elseif ($now->isSameDay($endDate)) {
+                $remindTime = Carbon::today('Asia/Ho_Chi_Minh')->setTime(17, 30, 0);
+                if ($now->greaterThanOrEqualTo($remindTime)) {
+                    Log::info('Thông báo: Issue sắp hết hạn vào hôm nay...', [
+                        'key' => $key,
+                        'current_time' => $now->toDateTimeString()
+                    ]);
+
+                    $currentStatus = 'Warning';
+                }
+                $statusText = "Hạn cuối ngày";
+            }
+        }
+
+        return [
+            'current_status' => $currentStatus,
+            'status_text' => $statusText,
+        ];
+    }
+
     /**
      * Logic lõi tính toán Overdue trạng thái và tạo chuỗi hiển thị quy đổi chi tiết
      */
@@ -125,7 +206,7 @@ class IssueTransformerService
                 $statusText = "Quá hạn " . $this->formatDetailedDuration($endDate, $doneCreatedAt);
             } else {
                 $days = $doneCreatedAt->startOfDay()->diffInDays($endDate->startOfDay());
-                $statusText = $days === 0 ? "Hạn cuối ngày" : "Còn " . $this->formatDetailedDuration($doneCreatedAt, $endDate);
+                $statusText = $days === 0 ? "Hạn cuối ngày" : (($currentStatus === 'Done') ? "Đúng thời hạn" : "Còn " . $this->formatDetailedDuration($doneCreatedAt, $endDate));
             }
         } else {
             $now = Carbon::now('Asia/Ho_Chi_Minh');
@@ -150,9 +231,6 @@ class IssueTransformerService
                 $statusText = "Hạn cuối ngày";
             } else {
                 $statusText = "Còn " . $this->formatDetailedDuration($now, $endDate);
-                if ($currentStatus === 'Done') {
-                    $statusText = "Đúng thời hạn";
-                }
             }
         }
 
