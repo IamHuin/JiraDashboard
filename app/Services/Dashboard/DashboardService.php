@@ -153,7 +153,7 @@ class DashboardService
         return ['success' => true, 'data' => $projects ?? []];
     }
 
-    public function getOverdueIssues(string $period, ?string $userName, ?array $projectNames = [], ?string $issuetype = null, ?string $status = null): array
+    public function getOverdueIssues(int $table_id,string $period, ?string $userName, ?array $projectNames = [], ?string $issuetype = null, ?string $status = null): array
     {
         $user = auth()->user();
         if (!$user) return ['success' => false, 'data' => []];
@@ -168,7 +168,7 @@ class DashboardService
         }
 
         $projectHash = md5(json_encode($allowedProjectNames));
-        $cacheKey = "user_{$user->id}_overdues_{$period}_{$userName}_{$issuetype}_{$status}_{$projectHash}_p{$page}_s{$perPage}";
+        $cacheKey = "user_{$user->id}_overdues_{$table_id}_{$period}_{$userName}_{$issuetype}_{$status}_{$projectHash}_p{$page}_s{$perPage}";
 
         $issues = Cache::remember($cacheKey, $this->cacheService->getTtl(), function () use ($period, $allowedProjectNames, $userName, $issuetype, $status, $perPage, $user, $cacheKey) {
             $this->cacheService->trackKey($user->id, $cacheKey);
@@ -189,7 +189,7 @@ class DashboardService
         return format_dashboard_success($userName, $allowedProjectNames, $period, $issues);
     }
 
-    public function getOverdueLogWork(string $period, ?string $userName, ?array $projectNames = [], ?string $issuetype = null, ?string $statusLogWork = null): array
+    public function getOverdueLogWork(int $table_id,string $period, ?string $userName, ?array $projectNames = [], ?string $issuetype = null, ?string $statusLogWork = null): array
     {
         $user = auth()->user();
         if (!$user) return ['success' => false, 'data' => []];
@@ -204,7 +204,7 @@ class DashboardService
         }
 
         $projectHash = md5(json_encode($allowedProjectNames));
-        $cacheKey = "user_{$user->id}_overdues_{$period}_{$userName}_{$issuetype}_{$statusLogWork}_{$projectHash}_p{$page}_s{$perPage}";
+        $cacheKey = "user_{$user->id}_overdues_{$table_id}_{$period}_{$userName}_{$issuetype}_{$statusLogWork}_{$projectHash}_p{$page}_s{$perPage}";
 
         $issues = Cache::remember($cacheKey, $this->cacheService->getTtl(), function () use ($period, $allowedProjectNames, $userName, $issuetype, $statusLogWork, $perPage, $user, $cacheKey) {
             $this->cacheService->trackKey($user->id, $cacheKey);
