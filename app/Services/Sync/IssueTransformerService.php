@@ -32,8 +32,8 @@ class IssueTransformerService
                 'slsx'            => $issue['fields']['customfield_11306'] ?? null,
                 'status'          => $issue['fields']['status']['name'] ?? null,
                 'subtask_keys'    => $subtaskKeys,
-                'created'         => isset($issue['fields']['created'])
-                    ? Carbon::parse($issue['fields']['created'])->format('Y-m-d H:i:s')
+                'created'         => isset($issue['fields']['customfield_10108'])
+                    ? Carbon::parse($issue['fields']['customfield_10108'])->format('Y-m-d H:i:s')
                     : null,
             ];
         })->toArray();

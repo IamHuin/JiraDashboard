@@ -58,7 +58,7 @@ class SyncIssueService extends ConnectJiraService
         $user->jira_password = Crypt::decryptString($user->jira_password);
 
         $maxResults = $this->maxResults ?? 100; // Đảm bảo maxResults tầm 50-100
-        $fieldsParam = "&fields=project,summary,issuetype,assignee,customfield_11321,customfield_11323,customfield_11306,status,created,customfield_10115,customfield_10108,subtasks";
+        $fieldsParam = "&fields=project,summary,issuetype,assignee,customfield_11321,customfield_11323,customfield_11306,status,created,customfield_10108,customfield_10115,customfield_10108,subtasks";
 //        $fieldsParam = "";
         // Đồng bộ sẵn Project trước để tránh trong Loop gọi đi gọi lại
         $this->syncAndFetchProjects();
@@ -180,7 +180,7 @@ class SyncIssueService extends ConnectJiraService
         $lastSyncTime = Carbon::parse($this->syncRepo->getLastSyncTime());
         $startOfMonth = $lastSyncTime->copy()->startOfMonth()->format('Y-m-d');
         $endDate = Carbon::now()->format('Y-m-d');
-        $jql = "issuetype IN (Bug, \"Sub-task\", Story, Milestone) AND status != Cancelled AND created >= '{$startOfMonth}' AND created <= '{$endDate}' ORDER BY created ASC";
+        $jql = "issuetype IN (Bug, \"Sub-task\", Story, Milestone) AND status != Cancelled AND enddate >= '{$startOfMonth}' AND enddate <= '{$endDate}' ORDER BY created ASC";
 
         $this->fetchAndProcessIssuesByJql($jql);
     }
