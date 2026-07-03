@@ -6,6 +6,7 @@ use App\Events\IssuesSync;
 use App\Repositories\Interfaces\SyncIssueInterface;
 use App\Services\Dashboard\HandleSlsxUlnlRatioService;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class HandelSlsxUlnlRatio
 {
@@ -29,7 +30,7 @@ class HandelSlsxUlnlRatio
         $slsxUlnlRatios = [];
 
         $issuesByPeriod = $event->issues->groupBy(function ($issue) {
-            return Carbon::parse($issue['created'])->format('m-Y');
+            return Carbon::parse($issue['enddate'])->format('m-Y');
         });
 
         foreach ($issuesByPeriod as $period => $periodIssues) {

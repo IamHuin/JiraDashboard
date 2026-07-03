@@ -16,6 +16,7 @@ class OverdueRequest extends FormRequest
             'issuetype' => ['nullable', 'string'],
             'status' => ['nullable', 'string'],
             'statusLogWork' => ['nullable', 'string'],
+            'table_id' => ['required', 'integer'],
         ];
     }
 
@@ -30,6 +31,8 @@ class OverdueRequest extends FormRequest
             'issuetype.string' => 'Issue type phải là một chuỗi ký tự.',
             'status.string' => 'Status phải là một chuỗi ký tự.',
             'statusLogWork.string' => 'Status Log Work phải là một chuỗi ký tự.',
+            'table_id.required' => 'Table ID là bắt buộc.',
+            'table_id.integer' => 'Table ID phải là dạng số nguyên.',
         ];
     }
 }

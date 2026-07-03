@@ -85,6 +85,7 @@ class DashboardController extends Controller
     {
         $dto = DashboardDTO::fromArray($request->validated());
         $result = $this->dashboardService->getOverdueIssues(
+            $dto->table_id,
             $dto->period,
             $dto->user_name,
             $dto->project_names,
@@ -98,11 +99,12 @@ class DashboardController extends Controller
     {
         $dto = DashboardDTO::fromArray($request->validated());
         $result = $this->dashboardService->getOverdueLogWork(
+            $dto->table_id,
             $dto->period,
             $dto->user_name,
             $dto->project_names,
             $dto->issuetype,
-            $dto->statusLogWork
+            $dto->statusLogWork,
         );
 
         return response()->json($result);
