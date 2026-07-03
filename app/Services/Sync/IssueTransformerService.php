@@ -112,7 +112,7 @@ class IssueTransformerService
         foreach ($histories as $log) {
             if (isset($log['items'])) {
                 foreach ($log['items'] as $item) {
-                    if (isset($item['field']) && strtolower($item['field']) === 'WORKLOGID') {
+                    if (isset($item['field']) && strtoupper($item['field']) === 'WORKLOGID') {
                         if (isset($log['created'])) {
                             $logCreated = Carbon::parse($log['created'], 'Asia/Ho_Chi_Minh');
                             if ($latestLogWorkDate === null || $logCreated->greaterThan($latestLogWorkDate)) {
@@ -148,8 +148,7 @@ class IssueTransformerService
                 $currentStatus = 'Overdue';
                 $statusText = "Quá hạn " . $this->formatDetailedDuration($endDate, $logWorkDateDone);
             } else {
-                $days = $logWorkDateDone->startOfDay()->diffInDays($endDate->startOfDay());
-                $statusText = $days === 0 ? "Đúng thời hạn" : "Còn " . $this->formatDetailedDuration($logWorkDateDone, $endDate);
+                $statusText = "Đúng thời hạn";
             }
         } else {
             $now = Carbon::now('Asia/Ho_Chi_Minh');
