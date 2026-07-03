@@ -113,7 +113,7 @@ class DashboardRepository implements DashboardInterface
     public function getOverdueLogWork(string $period, ?array $projectNames = [], ?string $username = null, ?string $issueType = null, ?string $statusLogWork = null, int $perPage = 10): LengthAwarePaginator
     {
         $query = DB::table('jira_overdues')
-            ->select('id', 'key', 'summary', 'issuetype', 'assignee', 'statusLogWork', 'statusTextLogWork', 'enddate');
+            ->select('id', 'key', 'summary', 'issuetype', 'assignee', 'statusLogWork as status', 'statusTextLogWork as statusText', 'enddate');
 
         if ($period) {
             $query->where('period', $period);
