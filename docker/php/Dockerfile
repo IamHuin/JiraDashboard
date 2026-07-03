@@ -1,4 +1,4 @@
-FROM mirror.gcr.io/library/php:8.3-fpm
+FROM mirror.gcr.io/library/php:8.4-fpm
 
 WORKDIR /var/www
 
