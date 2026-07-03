@@ -6,6 +6,7 @@ use App\Events\IssuesSync;
 use App\Repositories\Interfaces\SyncIssueInterface;
 use App\Services\Dashboard\HandleBugRatioService;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class HandelBugRatio
 {

@@ -7,7 +7,10 @@ class HandleSlsxUlnlRatioService
     public function slsxSum($issues)
     {
         return $issues
-            ->filter(fn($issue) => ($issue['issuetype'] === 'Sub-task') && !empty($issue['assignee']) && $issue['status'] === 'Done')
+            ->filter(fn($issue) => ($issue['issuetype'] === 'Sub-task')
+                && !empty($issue['assignee'])
+                && $issue['status'] === 'Done'
+            )
             ->groupBy(fn($issue) => $issue['assignee'])
             ->map(fn($group, $assignee) => [
                 'username' => $assignee,
@@ -19,7 +22,10 @@ class HandleSlsxUlnlRatioService
     public function ulnlSum($issues)
     {
         return $issues
-            ->filter(fn($issue) => ($issue['issuetype'] === 'Sub-task') && !empty($issue['assignee']) && $issue['status'] === 'Done')
+            ->filter(fn($issue) => ($issue['issuetype'] === 'Sub-task')
+                && !empty($issue['assignee'])
+                && $issue['status'] === 'Done'
+            )
             ->groupBy(fn($issue) => $issue['assignee'])
             ->map(fn($group, $assignee) => [
                 'username' => $assignee,

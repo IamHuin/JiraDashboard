@@ -30,6 +30,7 @@ class SyncIssueRepository implements SyncIssueInterface
                 'status'          => $issue['status'] ?? null,
                 'subtask_keys'    => $issue['subtask_keys'] ?? null,
                 'created_at_jira' => $issue['created'] ?? null,
+                'end_date_jira'   => $issue['enddate'] ?? null,
                 'created_at'      => $now,
                 'updated_at'      => $now,
             ];
@@ -41,7 +42,7 @@ class SyncIssueRepository implements SyncIssueInterface
             [        
                 'project_name', 'summary', 'issuetype', 'assignee',
                 'causer', 'causer_category', 'ulnl', 'slsx',
-                'status', 'subtask_keys', 'created_at_jira', 'updated_at'
+                'status', 'subtask_keys', 'created_at_jira', 'end_date_jira', 'updated_at'
             ]
         );
     }

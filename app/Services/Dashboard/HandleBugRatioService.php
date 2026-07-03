@@ -17,7 +17,7 @@ class HandleBugRatioService
 
     public function countSubTask($issues)
     {
-        return $issues->filter(fn($issue) => $issue['issuetype'] === 'Sub-task' && !empty($issue['assignee']))
+        return $issues->filter(fn($issue) => $issue['issuetype'] === 'Sub-task' && $issue['status'] === 'Done' && !empty($issue['assignee']))
             ->groupBy(fn($issue) => $issue['assignee'])
             ->map(fn($group, $assignee) => [
                 'assignee' => $assignee,
