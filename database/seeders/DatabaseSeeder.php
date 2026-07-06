@@ -2,9 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Enums\IsAdminEnum;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -19,7 +21,11 @@ class DatabaseSeeder extends Seeder
 
         User::factory()->create([
             'jira_username' => 'admin',
-            'jira_password' => encrypt('admin'),
+            'jira_password' => Hash::make('admin'),
+            'jira_display_name' => 'Super Admin',
+            'jira_email' => 'admin@gmail.com',
+            'super_admin' => IsAdminEnum::YES,
+            'is_admin' => IsAdminEnum::NO,
         ]);
     }
 }
