@@ -144,10 +144,14 @@ class DashboardService
             return ['success' => false, 'message' => 'User not authenticated', 'data' => []];
         }
 
-        $cacheKey = "user_{$user->id}_projects_list";
+        $cacheKey = "user_{$user->id}_{$user->isAdmin()}_projects_list";
         $projects = Cache::remember($cacheKey, $this->cacheService->getTtl(), function () use ($user, $cacheKey) {
             $this->cacheService->trackKey($user->id, $cacheKey);
-            return $this->projectRepo->getProjectsJson($user->id);
+            if ($user->isAdmin()) {
+                return $this->projectRepo->getAllProjects();
+            } else {
+                return $this->projectRepo->getProjectsJson($user->id);
+            }
         });
 
         return ['success' => true, 'data' => $projects ?? []];
@@ -317,7 +321,8 @@ class DashboardService
         $user = auth()->user();
         if (!$user) return [];
 
-        $ProjectUser = $this->projectRepo->getProjectsJson($user->id) ?? [];
+        $ProjectUser = $user->isAdmin() ? $this->projectRepo->getAllProjects() ?? [] : $this->projectRepo->getProjectsJson($user->id) ?? [];
+
         $ProjectName = collect($ProjectUser)->pluck('name')->toArray();
 
         if (empty($requestProjectNames)) return $ProjectName;

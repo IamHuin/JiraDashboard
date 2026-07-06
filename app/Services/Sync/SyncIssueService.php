@@ -261,7 +261,7 @@ class SyncIssueService extends ConnectJiraService
         }
 
         $projectsArray = array_map(fn($p) => ProjectDTO::fromArray($p)->toArray(), $jiraData);
-        $this->projectRepo->updateProjectsJson($user->id, $projectsArray);
+        $this->projectRepo->upsertProjects($user->id, $projectsArray);
 
         return $projectsArray;
     }

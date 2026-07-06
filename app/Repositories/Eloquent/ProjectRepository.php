@@ -4,17 +4,19 @@ namespace App\Repositories\Eloquent;
 
 use App\Models\User;
 use App\Repositories\Interfaces\ProjectInterface;
+use Illuminate\Support\Facades\DB;
 
 class ProjectRepository implements ProjectInterface
 {
 
-    public function updateProjectsJson(int $userId, array $projectsArray): void
+    public function upsertProjects(int $userId, array $projectsArray): void
     {
         $user = User::find($userId);
         if ($user) {
             $user->jira_projects_json = $projectsArray;
             $user->save();
         }
+        DB::table('jira_projects')->upsert($projectsArray, ['key'], ['name']);
     }
 
     public function getProjectsJson(int $userId): array
@@ -30,5 +32,16 @@ class ProjectRepository implements ProjectInterface
         }
 
         return $user->jira_projects_json;
+    }
+
+    public function getAllProjects(): array
+    {
+        return DB::table('jira_projects')
+            ->select('key', 'name')
+            ->get()
+            ->map(function ($item) {
+                return (array) $item;
+            })
+            ->toArray();
     }
 }

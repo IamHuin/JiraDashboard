@@ -17,6 +17,9 @@ return new class extends Migration
             $table->string('jira_password');
             $table->json('jira_projects_json')->nullable();
             $table->string('jira_display_name')->nullable();
+            $table->string('jira_email')->unique()->nullable();
+            $table->tinyInteger('super_admin')->default(0)->comment('0: Không phải Super admin, 1: Super admin');
+            $table->tinyInteger('is_admin')->default(0)->comment('0: Không phải admin, 1: admin');
             $table->timestamps();
         });
     }
