@@ -5,57 +5,33 @@ namespace App\Http\Controllers\Auth;
 use App\DTO\Auth\AuthDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\AuthRequest;
-use App\Models\User;
-use App\Services\Ping\ConnectJiraService;
-use App\Services\Sync\SyncIssueService;
+use App\Services\Auth\AuthService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Crypt;
+use Exception;
 
 class AuthController extends Controller
 {
-    protected $jira;
-    protected $syncService;
+    protected $authService;
 
-    public function __construct(ConnectJiraService $jira, SyncIssueService $syncService)
+    public function __construct(AuthService $authService)
     {
-        $this->jira = $jira;
-        $this->syncService = $syncService;
+        $this->authService = $authService;
     }
 
     public function Login(AuthRequest $request): JsonResponse
     {
         $dto = AuthDTO::login($request->input('username'), $request->input('password'));
 
-        $url = "/rest/api/2/myself";
-        $userData = $this->jira->connectToJira($dto, $url);
+        try {
+            $result = $this->authService->handleLogin($dto);
 
-        if (!empty($userData['error'])) {
+            return response()->json($result);
+        } catch (Exception $e) {
             return response()->json([
                 'error' => 'Login failed',
-                'message' => $userData['error'],
+                'message' => $e->getMessage(),
             ], 401);
         }
-
-        $user = User::updateOrCreate(
-            ['jira_username' => $dto->jira_username],
-            [
-                'jira_password' => Crypt::encryptString($dto->jira_password),
-                'jira_display_name' => $userData['displayName']
-            ]
-        );
-
-        $token = auth()->login($user);
-
-        try {
-            $this->syncService->syncAndFetchProjects();
-        } catch (\Exception $e) {
-            \Log::error("Lỗi đồng bộ dự án trực tiếp khi Login: " . $e->getMessage());
-        };
-
-        return response()->json([
-            'token' => $token,
-            'display_name' => $userData['displayName'] ?? $userData['name'] ?? 'unknown',
-        ]);
     }
 
     public function Logout(): JsonResponse
