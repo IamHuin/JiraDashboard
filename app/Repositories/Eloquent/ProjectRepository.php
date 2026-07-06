@@ -11,12 +11,20 @@ class ProjectRepository implements ProjectInterface
 
     public function upsertProjects(int $userId, array $projectsArray): void
     {
+        DB::table('jira_projects')->upsert($projectsArray, ['key'], ['name']);
+
+        $projectKeys = array_column($projectsArray, 'key');
+
+        $projectIds = DB::table('jira_projects')
+            ->whereIn('key', $projectKeys)
+            ->pluck('id')
+            ->toArray();
+
         $user = User::find($userId);
-        if ($user) {
-            $user->jira_projects_json = $projectsArray;
+        if ($user && !empty($projectIds)) {
+            $user->jira_projects_json = json_encode($projectIds);
             $user->save();
         }
-        DB::table('jira_projects')->upsert($projectsArray, ['key'], ['name']);
     }
 
     public function getProjectsJson(int $userId): array
@@ -28,7 +36,8 @@ class ProjectRepository implements ProjectInterface
         }
 
         if (is_string($user->jira_projects_json)) {
-            return json_decode($user->jira_projects_json, true) ?? [];
+            $projectUser = json_decode($user->jira_projects_json, true) ?? [];
+            return DB::table('jira_projects')->select('key', 'name')->whereIn('id', $projectUser)->get()->toArray();
         }
 
         return $user->jira_projects_json;

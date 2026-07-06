@@ -150,7 +150,8 @@ class DashboardService
             if ($user->isAdmin()) {
                 return $this->projectRepo->getAllProjects();
             } else {
-                return $this->projectRepo->getProjectsJson($user->id);
+                $data = $this->projectRepo->getProjectsJson($user->id);
+                return json_decode(json_encode($data), true);
             }
         });
 
