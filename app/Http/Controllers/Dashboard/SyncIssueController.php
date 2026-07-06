@@ -15,36 +15,36 @@ class SyncIssueController extends Controller
     {
         $this->jiraSync = $jiraSync;
     }
-    
+
     public function syncFullIssues(): JsonResponse
     {
         try {
             $this->jiraSync->syncFullIssues();
             return response()->json([
                 'success' => true,
-                'message' => 'Full sync completed successfully'
+                'message' => 'Đồng bộ toàn bộ dữ liệu thành công'
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Full sync failed',
+                'message' => 'Đồng bộ toàn bộ dữ liệu thất bại',
                 'error' => $e->getMessage()
             ], 500);
         }
     }
-    
+
     public function syncFromLastIssues(): JsonResponse
     {
         try {
             $this->jiraSync->syncFromLastIssues();
             return response()->json([
                 'success' => true,
-                'message' => 'Sync from lastSyncTime completed successfully'
+                'message' => 'Đồng bộ dữ liệu thành công'
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Sync from lastSyncTime failed',
+                'message' => 'Đồng bộ từ thời điểm cuối cùng thất bại',
                 'error' => $e->getMessage()
             ], 500);
         }
