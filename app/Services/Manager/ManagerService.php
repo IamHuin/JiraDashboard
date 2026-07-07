@@ -9,8 +9,22 @@ class ManagerService
 {
     public function __construct(protected ManagerInterface $managerRepo) {}
 
-    public function getListUsers(ManagerDTO $dto)
+    public function getListUsers(ManagerDTO $dto): array
     {
-        return $this->managerRepo->getListUsers($dto);
+        $data = $this->managerRepo->getListUsers($dto);
+
+        if (empty($data)) {
+            return [
+                'success' => false,
+                'message' => 'Không tìm thấy dữ liệu người dùng thành viên.',
+                'data'    => []
+            ];
+        }
+
+        return [
+            'success' => true,
+            'message' => 'Lấy danh sách thành viên thành công.',
+            'data'    => $data
+        ];
     }
 }
