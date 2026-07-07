@@ -27,4 +27,15 @@ class ManagerRepository implements ManagerInterface
             })
             ->get();
     }
+
+    public function updateUser(ManagerDTO $dto)
+    {
+        if ($dto->is_admin === null) {
+            return false;
+        }
+
+        return DB::table('users')
+            ->where('jira_username', $dto->user_name)
+            ->update(['is_admin' => $dto->is_admin]);
+    }
 }

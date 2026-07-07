@@ -10,7 +10,6 @@ use Illuminate\Http\JsonResponse;
 
 class ManagerController extends Controller
 {
-    // PHP 8+ tự động khai báo và gán giá trị cho property qua constructor
     public function __construct(protected ManagerService $managerService) {}
 
     public function getListUsers(ManagerRequest $request): JsonResponse
@@ -18,6 +17,15 @@ class ManagerController extends Controller
         $dto = ManagerDTO::fromArray($request->validated());
 
         $result = $this->managerService->getListUsers($dto);
+
+        return response()->json($result);
+    }
+    
+    public function updateUser(ManagerRequest $request): JsonResponse
+    {
+        $dto = ManagerDTO::fromArray($request->validated());
+
+        $result = $this->managerService->updateUser($dto);
 
         return response()->json($result);
     }
