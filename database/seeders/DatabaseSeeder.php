@@ -23,7 +23,6 @@ class DatabaseSeeder extends Seeder
             'jira_username' => 'admin',
             'jira_password' => Hash::make('admin'),
             'jira_display_name' => 'Super Admin',
-            'jira_email' => 'admin@gmail.com',
             'super_admin' => IsAdminEnum::YES,
             'is_admin' => IsAdminEnum::NO,
         ]);
