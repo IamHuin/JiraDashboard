@@ -27,4 +27,23 @@ class ManagerService
             'data'    => $data
         ];
     }
+
+    public function updateUser(ManagerDTO $dto): array
+    {
+        $data = $this->managerRepo->updateUser($dto);
+
+        if (empty($data)) {
+            return [
+                'success' => false,
+                'message' => 'Không tìm thấy dữ liệu người dùng thành viên.',
+                'data' => []
+            ];
+        }
+
+        return [
+            'success' => true,
+            'message' => 'Cập nhật thông tin thành viên thành công.',
+            'data' => $data
+        ];
+    }
 }
