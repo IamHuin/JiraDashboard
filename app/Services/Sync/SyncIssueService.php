@@ -175,11 +175,9 @@ class SyncIssueService extends ConnectJiraService
 
     public function syncFromLastIssues(): void
     {
-//        $lastSyncTime = Carbon::parse($this->syncRepo->getLastSyncTime());
-//        $startOfMonth = $lastSyncTime->copy()->startOfMonth()->format('Y-m-d');
-//        $endDate = Carbon::now()->format('Y-m-d');
-        $startOfMonth = "2026-06-01";
-        $endDate = "2026-06-30";
+        $lastSyncTime = Carbon::parse($this->syncRepo->getLastSyncTime());
+        $startOfMonth = $lastSyncTime->copy()->startOfMonth()->format('Y-m-d');
+        $endDate = Carbon::now()->format('Y-m-d');
         $jql = "issuetype IN (Bug, \"Sub-task\", Story, Milestone) AND status != Cancelled AND created >= '{$startOfMonth}' AND created <= '{$endDate}' ORDER BY created ASC";
 
         $this->fetchAndProcessIssuesByJql($jql);
