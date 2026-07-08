@@ -48,7 +48,7 @@ class AuthService
         $token = auth()->login($user);
 
         try {
-            $this->syncService->syncAndFetchProjects();
+            $this->syncService->syncAndFetchProjects($user);
         } catch (Exception $e) {
             Log::error("Lỗi đồng bộ dự án trực tiếp khi Login: " . $e->getMessage());
         }

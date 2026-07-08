@@ -21,6 +21,7 @@ Route::middleware('auth:api')->group(function () {
         Route::prefix('sync')->group(function () {
             Route::get('full_issues', [SyncIssueController::class, 'syncFullIssues'])->name('sync.full_issues');
             Route::get('from_last_issues', [SyncIssueController::class, 'syncFromLastIssues'])->name('sync.from_last_issues');
+            Route::get('status/{mode}', [SyncIssueController::class, 'status']);
         });
 
         Route::prefix('cache')->group(function () {

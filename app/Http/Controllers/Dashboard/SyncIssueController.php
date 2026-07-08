@@ -2,51 +2,58 @@
 
 namespace App\Http\Controllers\Dashboard;
 
+use App\Enums\SyncStatus;
 use App\Http\Controllers\Controller;
-use App\Services\Sync\SyncIssueService;
-use Exception;
+use App\Jobs\SyncIssueJob;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class SyncIssueController extends Controller
 {
-    protected $jiraSync;
-
-    public function __construct(SyncIssueService $jiraSync)
+    protected function cacheKey(string $mode): string
     {
-        $this->jiraSync = $jiraSync;
+        return "jira-sync-status:" . Auth::id() . ":{$mode}";
     }
 
     public function syncFullIssues(): JsonResponse
     {
-        try {
-            $this->jiraSync->syncFullIssues();
-            return response()->json([
-                'success' => true,
-                'message' => 'Đồng bộ toàn bộ dữ liệu thành công'
-            ]);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Đồng bộ toàn bộ dữ liệu thất bại',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return $this->dispatchSync('full');
     }
 
     public function syncFromLastIssues(): JsonResponse
     {
-        try {
-            $this->jiraSync->syncFromLastIssues();
-            return response()->json([
-                'success' => true,
-                'message' => 'Đồng bộ dữ liệu thành công'
-            ]);
-        } catch (Exception $e) {
+        return $this->dispatchSync('last');
+    }
+
+    protected function dispatchSync(string $mode): JsonResponse
+    {
+        $key = $this->cacheKey($mode);
+        $current = Cache::get($key);
+
+        if ($current === SyncStatus::RUNNING->value) {
             return response()->json([
                 'success' => false,
-                'message' => 'Đồng bộ từ thời điểm cuối cùng thất bại',
-                'error' => $e->getMessage()
-            ], 500);
+                'status'  => $current,
+                'message' => 'Đang đồng bộ, vui lòng đợi hoàn tất trước khi bấm lại',
+            ], 429);
         }
+
+        Cache::put($key, SyncStatus::IDLE->value, now()->addHours(2)); // đặt trạng thái tạm trước khi job set RUNNING
+        SyncIssueJob::dispatch(Auth::id(), $mode);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã nhận yêu cầu đồng bộ, đang xử lý nền',
+        ]);
+    }
+
+    public function status(string $mode): JsonResponse
+    {
+        $status = Cache::get($this->cacheKey($mode), SyncStatus::IDLE->value);
+
+        return response()->json([
+            'status' => $status,
+        ]);
     }
 }

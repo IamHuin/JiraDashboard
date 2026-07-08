@@ -4,6 +4,7 @@ namespace App\Services\Sync;
 
 use App\DTO\Project\ProjectDTO;
 use App\Events\IssuesSync;
+use App\Models\User;
 use App\Repositories\Interfaces\IssueOverdueInterface;
 use App\Repositories\Interfaces\ProjectInterface;
 use App\Repositories\Interfaces\SyncIssueInterface;
@@ -14,7 +15,6 @@ use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Pool;
 use GuzzleHttp\Psr7\Response;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Log;
@@ -46,18 +46,23 @@ class SyncIssueService extends ConnectJiraService
         $this->transformer = $transformer;
     }
 
-    protected function fetchAndProcessIssuesByJql(string $jql): void
+    /**
+     * @param string $jql
+     * @param User   $originalUser  User gốc (jira_password còn ở dạng encrypted), truyền từ Job/Controller vào
+     */
+    protected function fetchAndProcessIssuesByJql(string $jql, User $originalUser): void
     {
         DB::disableQueryLog();
         set_time_limit(0);
 
-        $user = clone Auth::user();
+        // syncAndFetchProjects tự lo decrypt riêng, nên truyền user gốc (chưa decrypt) vào đây
+        $this->syncAndFetchProjects($originalUser);
+
+        $user = clone $originalUser;
         $user->jira_password = Crypt::decryptString($user->jira_password);
 
         $maxResults = $this->maxResults ?? 100;
         $fieldsParam = "&fields=project,summary,issuetype,assignee,customfield_11321,customfield_11323,customfield_11306,status,created,customfield_10108,customfield_10115,subtasks";
-
-        $this->syncAndFetchProjects();
 
         $this->latestCreatedTime = null;
         $this->allTransformedIssuesForEvent = [];
@@ -185,7 +190,6 @@ class SyncIssueService extends ConnectJiraService
                     $pos = mb_strpos($remainingSummary, $matchedTextForSuffix);
                     if ($pos !== false) {
                         $rawSuffix = mb_substr($remainingSummary, $pos + mb_strlen($matchedTextForSuffix));
-                        // ĐÃ SỬA: Loại bỏ \[\] để KHÔNG xóa dấu mở ngoặc vuông [ ở đầu chuỗi đuôi nữa
                         $suffixText = trim(preg_replace('/^[\s\-_–—\/|:()]+/u', '', $rawSuffix));
                     }
                 }
@@ -225,8 +229,6 @@ class SyncIssueService extends ConnectJiraService
             'Dev Done'
         ];
 
-        // FIX: group bằng key chuỗi ghép thủ công, tránh PHP tự ép kiểu
-        // ticket_code toàn số (vd "3370") thành int khi dùng làm array key
         $grouped = collect($rawMilestones)->groupBy(
             fn($item) => $item['period'] . '|||' . $item['ticket_code']
         );
@@ -237,12 +239,10 @@ class SyncIssueService extends ConnectJiraService
         foreach ($grouped as $groupKey => $issues) {
             $issuesCollection = collect($issues);
 
-            // Lấy period/ticket_code từ chính dữ liệu gốc, ép string tường minh
             $period = (string) $issuesCollection->first()['period'];
             $ticketCode = (string) $issuesCollection->first()['ticket_code'];
             $projectName = $issuesCollection->first()['project_name'] ?? 'Dự án không tên';
 
-            // Tìm kiếm một "tên đuôi" đại diện hợp lệ nhất của phiếu để dùng chung cho các mốc thiếu
             $sharedSuffix = $issuesCollection->where('suffix_text', '!=', '')->pluck('suffix_text')->first() ?? '';
 
             $processedTickets[] = [
@@ -255,7 +255,6 @@ class SyncIssueService extends ConnectJiraService
 
             $missingMilestones = array_values(array_diff($requiredMilestones, $currentStandardMilestones));
 
-            // Ghi nhận mốc thiếu (MISSING) đính kèm tên đuôi kế thừa
             foreach ($missingMilestones as $missingName) {
                 $fullName = !empty($sharedSuffix) ? $missingName . ' - ' . $sharedSuffix : $missingName;
 
@@ -270,7 +269,6 @@ class SyncIssueService extends ConnectJiraService
                 ];
             }
 
-            // Ghi nhận mốc sai định dạng (EXCEPTION)
             foreach ($currentExceptionMilestones as $excItem) {
                 $excName = $excItem['milestone_name'];
                 $excSuffix = $excItem['suffix_text'] ?: $sharedSuffix;
@@ -334,19 +332,19 @@ class SyncIssueService extends ConnectJiraService
         gc_collect_cycles();
     }
 
-    public function syncFullIssues(): void
+    public function syncFullIssues(User $user): void
     {
         $jql = 'issuetype IN (Bug, "Sub-task", Story, Milestone) AND status != Cancelled ORDER BY summary DESC, updated DESC';
-        $this->fetchAndProcessIssuesByJql($jql);
+        $this->fetchAndProcessIssuesByJql($jql, $user);
     }
 
-    public function syncFromLastIssues(): void
+    public function syncFromLastIssues(User $user): void
     {
         $startOfMonth = '2026-06-01';
         $endDate = '2026-06-30';
         $jql = "issuetype IN (Bug, \"Sub-task\", Story, Milestone) AND status != Cancelled AND created >= '{$startOfMonth}' AND created <= '{$endDate}' ORDER BY created ASC";
 
-        $this->fetchAndProcessIssuesByJql($jql);
+        $this->fetchAndProcessIssuesByJql($jql, $user);
     }
 
     protected function processOverdueDirectly(Collection $rawIssues): void
@@ -392,9 +390,11 @@ class SyncIssueService extends ConnectJiraService
         unset($bulkOverdueData);
     }
 
-    public function syncAndFetchProjects(): array
+    /**
+     * @param User $user  User gốc, jira_password còn ở dạng encrypted
+     */
+    public function syncAndFetchProjects(User $user): array
     {
-        $user = Auth::user();
         $clonedUser = clone $user;
         if (base64_decode($clonedUser->jira_password, true) !== false) {
             try {
