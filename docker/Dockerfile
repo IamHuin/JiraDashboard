@@ -1,6 +1,6 @@
-FROM mirror.gcr.io/library/php:8.4-fpm
+FROM mirror.gcr.io/library/php:8.4-apache
 
-WORKDIR /var/www
+WORKDIR /var/www/html
 
 RUN apt-get update && apt-get install -y \
     git \
@@ -13,7 +13,15 @@ RUN apt-get update && apt-get install -y \
         pdo_mysql \
         mbstring \
         zip \
+    && a2enmod rewrite \
     && rm -rf /var/lib/apt/lists/*
+
+ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
+
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
+    /etc/apache2/sites-available/*.conf \
+    /etc/apache2/apache2.conf \
+    /etc/apache2/conf-available/*.conf
 
 COPY . .
 
@@ -23,6 +31,6 @@ RUN unzip -o dependencies.zip \
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-EXPOSE 9000
+EXPOSE 80
 
-CMD ["php-fpm"]
+CMD ["apache2-foreground"]
