@@ -4,6 +4,7 @@ namespace App\Services\Dashboard;
 
 use App\Enums\PaginateEnum;
 use App\Repositories\Interfaces\DashboardInterface;
+use App\Repositories\Interfaces\MilestoneInterface;
 use App\Repositories\Interfaces\ProjectInterface;
 use App\Repositories\Interfaces\USBudgetInterface;
 use App\Services\Cache\DashboardCacheService;
@@ -17,13 +18,15 @@ class DashboardService
     public DashboardCacheService $cacheService;
     protected PaginationService $paginationService;
     protected USBudgetInterface $usbudgetRepo;
+    protected MilestoneInterface $milestoneRepo;
 
     public function __construct(
         DashboardInterface    $dashboardRepo,
         ProjectInterface      $projectRepo,
         DashboardCacheService $cacheService,
         PaginationService  $paginationService,
-        USBudgetInterface $usbudgetRepo
+        USBudgetInterface  $usbudgetRepo,
+        MilestoneInterface $milestoneRepo
     )
     {
         $this->dashboardRepo = $dashboardRepo;
@@ -31,6 +34,7 @@ class DashboardService
         $this->cacheService = $cacheService;
         $this->paginationService = $paginationService;
         $this->usbudgetRepo = $usbudgetRepo;
+        $this->milestoneRepo = $milestoneRepo;
     }
 
     public function getOverview(string $period, ?array $projectNames = []): array
@@ -254,6 +258,32 @@ class DashboardService
         }
 
         return format_dashboard_success($username, $allowedProjectNames, $period, $issues);
+    }
+
+    public function getMilestones(string $period, ?string $report_type, ?array $projectNames = []): array
+    {
+        $user = auth()->user();
+        if (!$user) return ['success' => false, 'data' => []];
+
+        $perPage = (int)request('per_page', PaginateEnum::DEFAULT_PER_PAGE);
+
+        $allowedProjectNames = $this->filterAllowedProjects($projectNames);
+        if (empty($allowedProjectNames)) {
+            return ['success' => true, 'data' => []];
+        }
+
+        if ($period) {
+            $this->processUSBudget($period, $allowedProjectNames);
+
+            $paginator = $this->milestoneRepo->getMilestones($period, $report_type, $allowedProjectNames, $perPage);
+            $issues = [
+                'details' => $this->paginationService->format($paginator)
+            ];
+        } else {
+            $issues = ['details' => ['list' => [], 'meta' => []]];
+        }
+
+        return format_dashboard_success($user->jira_display_name, $allowedProjectNames, $period, $issues);
     }
 
     public function processUSBudget(string $period, ?array $projectNames = []): void

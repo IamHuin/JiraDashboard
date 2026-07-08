@@ -26,10 +26,11 @@ class SyncIssueService extends ConnectJiraService
     protected $issueOverdueRepo;
     protected $transformer;
 
-    // Biến tạm để lưu thời gian sync lớn nhất trong vòng lặp nhằm cập nhật sau cùng
     protected $latestCreatedTime = null;
-    // Biến thu thập dữ liệu đã transform để bắn Event sau khi hoàn thành (nếu thực sự cần)
     protected $allTransformedIssuesForEvent = [];
+
+    // Biến tích lũy milestone thô từ tất cả các trang
+    protected array $collectedMilestonesRaw = [];
 
     public function __construct(
         SyncIssueInterface    $syncRepo,
@@ -45,28 +46,23 @@ class SyncIssueService extends ConnectJiraService
         $this->transformer = $transformer;
     }
 
-    /**
-     * Thay đổi cốt lõi: Không trả về Collection nữa, xử lý trực tiếp trong Pool để tiết kiệm RAM
-     */
     protected function fetchAndProcessIssuesByJql(string $jql): void
     {
-        // 1. Tắt Query Log để tránh Laravel tích lũy RAM qua các câu lệnh SQL
         DB::disableQueryLog();
         set_time_limit(0);
 
         $user = clone Auth::user();
         $user->jira_password = Crypt::decryptString($user->jira_password);
 
-        $maxResults = $this->maxResults ?? 100; // Đảm bảo maxResults tầm 50-100
-        $fieldsParam = "&fields=project,summary,issuetype,assignee,customfield_11321,customfield_11323,customfield_11306,status,created,customfield_10108,customfield_10115,customfield_10108,subtasks";
-        // Đồng bộ sẵn Project trước để tránh trong Loop gọi đi gọi lại
+        $maxResults = $this->maxResults ?? 100;
+        $fieldsParam = "&fields=project,summary,issuetype,assignee,customfield_11321,customfield_11323,customfield_11306,status,created,customfield_10108,customfield_10115,subtasks";
+
         $this->syncAndFetchProjects();
 
-        // Reset các biến tracking
         $this->latestCreatedTime = null;
         $this->allTransformedIssuesForEvent = [];
+        $this->collectedMilestonesRaw = [];
 
-        // Lấy trang đầu tiên để biết tổng số lượng (Total)
         $firstUrl = "/rest/api/2/search?jql=" . urlencode($jql) . "&startAt=0&maxResults={$maxResults}&expand=changelog" . $fieldsParam;
         $firstData = $this->connectToJira($user, $firstUrl);
 
@@ -74,11 +70,9 @@ class SyncIssueService extends ConnectJiraService
             return;
         }
 
-        // Xử lý ngay trang đầu tiên
         $this->chunkProcess($firstData['issues']);
         $total = $firstData['total'] ?? 0;
 
-        // Giải phóng biến trang đầu
         unset($firstData);
         gc_collect_cycles();
 
@@ -87,7 +81,6 @@ class SyncIssueService extends ConnectJiraService
             return;
         }
 
-        // Khởi tạo Pool cho các trang còn lại
         $client = $this->initClient($user);
         $generator = function () use ($user, $jql, $total, $maxResults, $fieldsParam) {
             for ($startAt = $maxResults; $startAt < $total; $startAt += $maxResults) {
@@ -99,15 +92,12 @@ class SyncIssueService extends ConnectJiraService
         };
 
         $pool = new Pool($client, $generator(), [
-            'concurrency' => 10, // Hạ concurrency xuống một chút (khoảng 10-20) để tránh nghẽn luồng xử lý DB
+            'concurrency' => 10,
             'fulfilled' => function (Response $response) {
                 $body = json_decode($response->getBody()->getContents(), true);
                 if (!empty($body['issues'])) {
-                    // XỬ LÝ CUỐN CHIẾU: Cứ có data của page này là lưu vào DB luôn
                     $this->chunkProcess($body['issues']);
                 }
-
-                // GIẢI PHÓNG BỘ NHỚ NGAY LẬP TỨC
                 unset($body, $response);
                 gc_collect_cycles();
             },
@@ -117,53 +107,223 @@ class SyncIssueService extends ConnectJiraService
         ]);
 
         $pool->promise()->wait();
-
-        // Hoàn tất cập nhật thời gian đồng bộ và bắn Event
         $this->finalizeSync();
     }
 
-    /**
-     * Hàm xử lý cục bộ cho từng Chunk dữ liệu (Ví dụ: 100 dòng một lúc)
-     */
     protected function chunkProcess(array $rawIssuesChunk): void
     {
         $collectionChunk = collect($rawIssuesChunk);
-        // 1. Transform và Save Issues
+
         $transformedIssues = $this->transformer->transformMany($rawIssuesChunk);
         $this->syncRepo->saveIssues($transformedIssues);
 
-        // Gom một phần dữ liệu lại để bắn Event (nếu Event thực sự cần truyền data, 
-        // tuy nhiên nếu 30k issues nhét vào Event vẫn có thể gây tốn RAM, cân nhắc chỉ truyền số lượng)
         $this->allTransformedIssuesForEvent = array_merge($this->allTransformedIssuesForEvent, $transformedIssues);
-
-        // 2. Xử lý Overdue trực tiếp
         $this->processOverdueDirectly($collectionChunk);
+        $this->collectMilestonesRawData($collectionChunk);
 
-        // 3. Tìm thời gian max của hàng đợi này
         $maxCreated = $collectionChunk->map(fn($issue) => $issue['fields']['created'] ?? null)->filter()->max();
         if ($maxCreated && (is_null($this->latestCreatedTime) || $maxCreated > $this->latestCreatedTime)) {
             $this->latestCreatedTime = $maxCreated;
         }
 
-        // Xóa biến vùng nhớ cục bộ
         unset($transformedIssues, $collectionChunk);
     }
 
-    /**
-     * Hàm kết thúc, cập nhật thời gian và Event
-     */
+    protected function collectMilestonesRawData(Collection $rawIssues): void
+    {
+        $requiredMilestones = [
+            'Gửi Kế hoạch PYC', 'Gửi Tài liệu giải pháp để Review/Xác nhận', 'Gửi ULNL sơ bộ',
+            'Chốt ULNL', 'Bàn giao', 'Giải pháp Done', 'Demo/FI nội bộ', 'Test Done', 'Dev Done'
+        ];
+
+        $sortedMilestones = collect($requiredMilestones)->sortByDesc(fn($m) => strlen($m))->toArray();
+        $milestonePattern = '/' . implode('|', array_map(fn($m) => preg_quote($m, '/'), $sortedMilestones)) . '/i';
+
+        foreach ($rawIssues as $issueData) {
+            if (($issueData['fields']['issuetype']['name'] ?? null) !== 'Milestone') {
+                continue;
+            }
+
+            try {
+                $summary = trim($issueData['fields']['summary'] ?? '');
+                $ticketCode = null;
+                $milestoneName = null;
+                $isException = false;
+                $suffixText = '';
+
+                $hasMilestone = preg_match($milestonePattern, $summary, $milestoneMatches);
+
+                if ($hasMilestone) {
+                    $matchedName = trim($milestoneMatches[0]);
+                    $milestoneName = collect($requiredMilestones)->first(fn($m) => strcasecmp($m, $matchedName) === 0) ?? $matchedName;
+                    $remainingSummary = str_ireplace($matchedName, '', $summary);
+                } else {
+                    $isException = true;
+                    if (preg_match('/^([^-–—]+)/ui', $summary, $exMatches)) {
+                        $milestoneName = trim($exMatches[1]);
+                    } else {
+                        $milestoneName = 'Mốc không rõ tên';
+                    }
+                    $remainingSummary = $summary;
+                }
+
+                $matchedTextForSuffix = null;
+
+                // 1. ƯU TIÊN 1: Tìm dạng có cả chữ và số kết nối gạch ngang (Ví dụ: "VICPYC-3370", "PYC-3370")
+                if (preg_match('/([A-Z0-9]+-\d+)/ui', $remainingSummary, $ticketMatches)) {
+                    $ticketCode = strtoupper(trim($ticketMatches[1]));
+                    $matchedTextForSuffix = $ticketMatches[1];
+                }
+                // ƯU TIÊN 2: Nếu không tồn tại định dạng chữ-số, mới bắt số độc lập (Ví dụ: "3370")
+                elseif (preg_match('/(?<![A-Z0-9])(\d+)(?![A-Z0-9])/ui', $remainingSummary, $ticketMatches)) {
+                    $ticketCode = trim($ticketMatches[1]);
+                    $matchedTextForSuffix = $ticketMatches[1];
+                }
+
+                // 2. BÓC TÁCH PHẦN ĐUÔI ĐẰNG SAU MÃ PHIẾU VỪA TÌM ĐƯỢC
+                if ($ticketCode && $matchedTextForSuffix) {
+                    $pos = mb_strpos($remainingSummary, $matchedTextForSuffix);
+                    if ($pos !== false) {
+                        $rawSuffix = mb_substr($remainingSummary, $pos + mb_strlen($matchedTextForSuffix));
+                        // ĐÃ SỬA: Loại bỏ \[\] để KHÔNG xóa dấu mở ngoặc vuông [ ở đầu chuỗi đuôi nữa
+                        $suffixText = trim(preg_replace('/^[\s\-_–—\/|:()]+/u', '', $rawSuffix));
+                    }
+                }
+
+                // 3. CHỈ LƯU NẾU TÌM THẤY SỐ PHIẾU HỢP LỆ (Bỏ qua mốc thiếu thông tin số hiệu)
+                if ($ticketCode) {
+                    $createdAtJira = $issueData['fields']['created'] ?? null;
+                    $period = $createdAtJira ? Carbon::parse($createdAtJira)->format('m-Y') : Carbon::now()->format('m-Y');
+
+                    $this->collectedMilestonesRaw[] = [
+                        'ticket_code'    => strtoupper($ticketCode),
+                        'project_name'   => $issueData['fields']['project']['name'] ?? 'Dự án không tên',
+                        'milestone_name' => $milestoneName,
+                        'period'         => $period,
+                        'is_exception'   => $isException,
+                        'suffix_text'    => $suffixText
+                    ];
+                }
+
+            } catch (Exception $e) {
+                Log::error("Lỗi trích xuất Milestone: " . $e->getMessage());
+            }
+        }
+    }
+
+    protected function processMilestones(array $rawMilestones): array
+    {
+        $requiredMilestones = [
+            'Gửi Kế hoạch PYC',
+            'Gửi Tài liệu giải pháp để Review/Xác nhận',
+            'Gửi ULNL sơ bộ',
+            'Chốt ULNL',
+            'Bàn giao',
+            'Giải pháp Done',
+            'Demo/FI nội bộ',
+            'Test Done',
+            'Dev Done'
+        ];
+
+        $grouped = collect($rawMilestones)->groupBy(['period', 'ticket_code']);
+        $bulkReportData = [];
+        $processedTickets = [];
+
+        foreach ($grouped as $period => $tickets) {
+            foreach ($tickets as $ticketCode => $issues) {
+                $issuesCollection = collect($issues);
+                $projectName = $issuesCollection->first()['project_name'] ?? 'Dự án không tên';
+
+                // Tìm kiếm một "tên đuôi" đại diện hợp lệ nhất của phiếu để dùng chung cho các mốc thiếu
+                $sharedSuffix = $issuesCollection->where('suffix_text', '!=', '')->pluck('suffix_text')->first() ?? '';
+
+                $processedTickets[] = [
+                    'period'      => $period,
+                    'ticket_code' => $ticketCode
+                ];
+
+                $currentStandardMilestones = $issuesCollection->where('is_exception', false)->pluck('milestone_name')->unique()->toArray();
+                $currentExceptionMilestones = $issuesCollection->where('is_exception', true)->unique(fn($item) => $item['milestone_name'] . $item['suffix_text']);
+
+                $missingMilestones = array_values(array_diff($requiredMilestones, $currentStandardMilestones));
+
+                // Ghi nhận mốc thiếu (MISSING) đính kèm tên đuôi kế thừa
+                foreach ($missingMilestones as $missingName) {
+                    $fullName = !empty($sharedSuffix) ? $missingName . ' - ' . $sharedSuffix : $missingName;
+
+                    $bulkReportData[] = [
+                        'period'         => $period,
+                        'project_name'   => $projectName,
+                        'ticket_code'    => $ticketCode,
+                        'report_type'    => 'MISSING',
+                        'milestone_name' => mb_substr($fullName, 0, 255),
+                        'created_at'     => now(),
+                        'updated_at'     => now(),
+                    ];
+                }
+
+                // Ghi nhận mốc sai định dạng (EXCEPTION)
+                foreach ($currentExceptionMilestones as $excItem) {
+                    $excName = $excItem['milestone_name'];
+                    $excSuffix = $excItem['suffix_text'] ?: $sharedSuffix;
+                    $fullName = !empty($excSuffix) ? $excName . ' - ' . $excSuffix : $excName;
+
+                    $bulkReportData[] = [
+                        'period'         => $period,
+                        'project_name'   => $projectName,
+                        'ticket_code'    => $ticketCode,
+                        'report_type'    => 'EXCEPTION',
+                        'milestone_name' => mb_substr($fullName, 0, 255),
+                        'created_at'     => now(),
+                        'updated_at'     => now(),
+                    ];
+                }
+            }
+        }
+
+        if (!empty($processedTickets) || !empty($bulkReportData)) {
+            DB::transaction(function () use ($processedTickets, $bulkReportData) {
+
+                foreach ($processedTickets as $ticket) {
+                    DB::table('jira_milestones')
+                        ->where('period', $ticket['period'])
+                        ->where('ticket_code', $ticket['ticket_code'])
+                        ->delete();
+                }
+
+                if (!empty($bulkReportData)) {
+                    Log::info("Đang cập nhật báo cáo Milestone phẳng kèm Context vào DB: " . count($bulkReportData) . " dòng.");
+                    DB::table('jira_milestones')->upsert(
+                        $bulkReportData,
+                        ['period', 'ticket_code', 'report_type', 'milestone_name'],
+                        ['project_name', 'updated_at']
+                    );
+                }
+            });
+        }
+
+        return [
+            'status' => 'success',
+            'processed_count' => count($bulkReportData)
+        ];
+    }
+
     protected function finalizeSync(): void
     {
         if ($this->latestCreatedTime) {
             $this->syncRepo->updateSyncTime(Carbon::parse($this->latestCreatedTime)->format('Y-m-d H:i:s'));
         }
 
+        if (!empty($this->collectedMilestonesRaw)) {
+            $this->processMilestones($this->collectedMilestonesRaw);
+        }
+
         if (!empty($this->allTransformedIssuesForEvent)) {
             event(new IssuesSync(collect($this->allTransformedIssuesForEvent)));
         }
 
-        // Clear sạch sẽ bộ nhớ sau cùng
         $this->allTransformedIssuesForEvent = [];
+        $this->collectedMilestonesRaw = [];
         gc_collect_cycles();
     }
 
@@ -175,17 +335,13 @@ class SyncIssueService extends ConnectJiraService
 
     public function syncFromLastIssues(): void
     {
-        $lastSyncTime = Carbon::parse($this->syncRepo->getLastSyncTime());
-        $startOfMonth = $lastSyncTime->copy()->startOfMonth()->format('Y-m-d');
-        $endDate = Carbon::now()->format('Y-m-d');
+        $startOfMonth = '2026-06-01';
+        $endDate = '2026-06-30';
         $jql = "issuetype IN (Bug, \"Sub-task\", Story, Milestone) AND status != Cancelled AND created >= '{$startOfMonth}' AND created <= '{$endDate}' ORDER BY created ASC";
 
         $this->fetchAndProcessIssuesByJql($jql);
     }
 
-    /**
-     * Tách biệt logic xử lý lưu trữ Overdue sang bảng khác trực tiếp
-     */
     protected function processOverdueDirectly(Collection $rawIssues): void
     {
         $targetTypes = ['Sub-task', 'Story', 'Milestone'];
@@ -200,11 +356,8 @@ class SyncIssueService extends ConnectJiraService
 
             try {
                 $detailData = $this->transformer->transformSingle($issueData);
-
                 $createdAtJira = $issueData['fields']['customfield_10108'] ?? null;
-                $period = $createdAtJira
-                    ? Carbon::parse($createdAtJira)->format('m-Y')
-                    : Carbon::now()->format('m-Y');
+                $period = $createdAtJira ? Carbon::parse($createdAtJira)->format('m-Y') : Carbon::now()->format('m-Y');
 
                 $bulkOverdueData[] = [
                     'key'          => $issueData['key'] ?? null,
@@ -221,16 +374,14 @@ class SyncIssueService extends ConnectJiraService
                     'created_at'   => now(),
                     'updated_at'   => now(),
                 ];
-
             } catch (Exception $e) {
-                Log::error("Lỗi chuẩn bị data Overdue cho Key " . ($issueData['key'] ?? 'N/A') . ": " . $e->getMessage());
+                Log::error("Lỗi Overdue: " . $e->getMessage());
             }
         }
 
         if (!empty($bulkOverdueData)) {
             $this->issueOverdueRepo->upsertIssues($bulkOverdueData);
         }
-
         unset($bulkOverdueData);
     }
 
@@ -241,8 +392,7 @@ class SyncIssueService extends ConnectJiraService
         if (base64_decode($clonedUser->jira_password, true) !== false) {
             try {
                 $clonedUser->jira_password = Crypt::decryptString($clonedUser->jira_password);
-            } catch (Exception $e) {
-            }
+            } catch (Exception $e) {}
         }
 
         $url = "/rest/api/2/project";
@@ -252,7 +402,7 @@ class SyncIssueService extends ConnectJiraService
             $response = $client->getAsync($url)->wait();
             $jiraData = json_decode($response->getBody()->getContents(), true);
         } catch (Exception $e) {
-            Log::error("Jira Sync Projects Failed via Async-Wait: " . $e->getMessage());
+            Log::error("Jira Sync Projects Failed: " . $e->getMessage());
             $jiraData = ['error' => $e->getMessage()];
         }
 

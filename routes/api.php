@@ -32,6 +32,7 @@ Route::middleware('auth:api')->group(function () {
             Route::get('overview', [DashboardController::class, 'Overview'])->name('dashboard.overview');
             Route::get('projects', [DashboardController::class, 'getProjects'])->name('dashboard.projects');
             Route::get('usbudget', [DashboardController::class, 'getUSBudgets'])->name('dashboard.usbudgets');
+            Route::get('milestones', [DashboardController::class, 'getMilestones'])->name('dashboard.milestones');
 
             Route::prefix('leaderboard')->group(function () {
                 Route::get('bug_ratio', [DashboardController::class, 'getBugRatioLeaderboard'])->name('leaderboard.bug_ratio');
