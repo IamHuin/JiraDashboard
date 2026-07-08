@@ -5,7 +5,6 @@ namespace App\Events;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Collection;
 
 class IssuesSync
 {
@@ -15,8 +14,9 @@ class IssuesSync
      * Create a new event instance.
      */
     public $issues;
+    public $syncingUser;
 
-    public function __construct(Collection $issues)
+    public function __construct($issues)
     {
         $this->issues = $issues;
     }

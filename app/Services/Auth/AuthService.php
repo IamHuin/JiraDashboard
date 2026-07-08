@@ -19,8 +19,7 @@ class AuthService
         ConnectJiraService $jira,
         SyncIssueService   $syncService,
         UserInterface      $userRepo
-    )
-    {
+    ) {
         $this->jira = $jira;
         $this->syncService = $syncService;
         $this->userRepo = $userRepo;
@@ -50,14 +49,19 @@ class AuthService
         try {
             $this->syncService->syncAndFetchProjects($user);
         } catch (Exception $e) {
-            Log::error("Lỗi đồng bộ dự án trực tiếp khi Login: " . $e->getMessage());
+            Log::error("Lỗi đồng bộ dự án trực tiếp khi Login (Vẫn cho phép login tiếp tục): " . $e->getMessage());
         }
 
-        return [
+        $responseData = [
             'token' => $token,
             'display_name' => $userData['displayName'] ?? $userData['name'] ?? 'unknown',
             'super_admin' => $user->super_admin ?? 0,
         ];
+
+        // Dọn dẹp bộ nhớ giải phóng RAM
+        unset($userData, $user, $token);
+
+        return $responseData;
     }
 
     protected function handleSuperAdmin(AuthDTO $dto): array

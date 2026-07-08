@@ -4,7 +4,6 @@ namespace App\Listeners;
 
 use App\Events\IssuesSync;
 use App\Services\Cache\DashboardCacheService;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class ClearCache
@@ -18,10 +17,11 @@ class ClearCache
 
     public function handle(IssuesSync $event): void
     {
-        $user = Auth::user();
+        $user = $event->syncingUser ?? null;
+
         if ($user) {
             $this->cacheService->clearUserCache($user->id);
-            Log::info("User ID {$user->id} đã đồng bộ Jira thành công: Đã dọn dẹp Cache.");
+            Log::info("User ID {$user->id} đã đồng bộ Jira thành công: Đã dọn dẹp Cache từ Queue Worker.");
         }
     }
 }

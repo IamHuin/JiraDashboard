@@ -37,7 +37,7 @@ return [
     
     'jira' => [
         'base_uri' => env('JIRA_BASE_URI', 'https://jira.viettelsoftware.com'),
-        'max_results' => env('JIRA_MAX_RESULTS', 200),
+        'max_results' => env('JIRA_MAX_RESULTS', 50),
         'start_at' => env('JIRA_START_AT', 0),
     ]
 

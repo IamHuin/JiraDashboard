@@ -49,10 +49,10 @@ class SyncIssueJob implements ShouldQueue
                 default => throw new \InvalidArgumentException("Unknown sync mode: {$this->mode}"),
             };
 
-            Cache::put($this->cacheKey(), SyncStatus::DONE->value, now()->addMinutes(30));
+
         } catch (\Throwable $e) {
             Cache::put($this->cacheKey(), SyncStatus::FAILED->value, now()->addMinutes(30));
-            throw $e; // để failed() vẫn chạy + log
+            throw $e;
         }
     }
 
