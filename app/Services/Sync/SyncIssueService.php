@@ -225,59 +225,66 @@ class SyncIssueService extends ConnectJiraService
             'Dev Done'
         ];
 
-        $grouped = collect($rawMilestones)->groupBy(['period', 'ticket_code']);
+        // FIX: group bằng key chuỗi ghép thủ công, tránh PHP tự ép kiểu
+        // ticket_code toàn số (vd "3370") thành int khi dùng làm array key
+        $grouped = collect($rawMilestones)->groupBy(
+            fn($item) => $item['period'] . '|||' . $item['ticket_code']
+        );
+
         $bulkReportData = [];
         $processedTickets = [];
 
-        foreach ($grouped as $period => $tickets) {
-            foreach ($tickets as $ticketCode => $issues) {
-                $issuesCollection = collect($issues);
-                $projectName = $issuesCollection->first()['project_name'] ?? 'Dự án không tên';
+        foreach ($grouped as $groupKey => $issues) {
+            $issuesCollection = collect($issues);
 
-                // Tìm kiếm một "tên đuôi" đại diện hợp lệ nhất của phiếu để dùng chung cho các mốc thiếu
-                $sharedSuffix = $issuesCollection->where('suffix_text', '!=', '')->pluck('suffix_text')->first() ?? '';
+            // Lấy period/ticket_code từ chính dữ liệu gốc, ép string tường minh
+            $period = (string) $issuesCollection->first()['period'];
+            $ticketCode = (string) $issuesCollection->first()['ticket_code'];
+            $projectName = $issuesCollection->first()['project_name'] ?? 'Dự án không tên';
 
-                $processedTickets[] = [
-                    'period'      => $period,
-                    'ticket_code' => $ticketCode
+            // Tìm kiếm một "tên đuôi" đại diện hợp lệ nhất của phiếu để dùng chung cho các mốc thiếu
+            $sharedSuffix = $issuesCollection->where('suffix_text', '!=', '')->pluck('suffix_text')->first() ?? '';
+
+            $processedTickets[] = [
+                'period'      => $period,
+                'ticket_code' => $ticketCode
+            ];
+
+            $currentStandardMilestones = $issuesCollection->where('is_exception', false)->pluck('milestone_name')->unique()->toArray();
+            $currentExceptionMilestones = $issuesCollection->where('is_exception', true)->unique(fn($item) => $item['milestone_name'] . $item['suffix_text']);
+
+            $missingMilestones = array_values(array_diff($requiredMilestones, $currentStandardMilestones));
+
+            // Ghi nhận mốc thiếu (MISSING) đính kèm tên đuôi kế thừa
+            foreach ($missingMilestones as $missingName) {
+                $fullName = !empty($sharedSuffix) ? $missingName . ' - ' . $sharedSuffix : $missingName;
+
+                $bulkReportData[] = [
+                    'period'         => $period,
+                    'project_name'   => $projectName,
+                    'ticket_code'    => $ticketCode,
+                    'report_type'    => 'MISSING',
+                    'milestone_name' => mb_substr($fullName, 0, 255),
+                    'created_at'     => now(),
+                    'updated_at'     => now(),
                 ];
+            }
 
-                $currentStandardMilestones = $issuesCollection->where('is_exception', false)->pluck('milestone_name')->unique()->toArray();
-                $currentExceptionMilestones = $issuesCollection->where('is_exception', true)->unique(fn($item) => $item['milestone_name'] . $item['suffix_text']);
+            // Ghi nhận mốc sai định dạng (EXCEPTION)
+            foreach ($currentExceptionMilestones as $excItem) {
+                $excName = $excItem['milestone_name'];
+                $excSuffix = $excItem['suffix_text'] ?: $sharedSuffix;
+                $fullName = !empty($excSuffix) ? $excName . ' - ' . $excSuffix : $excName;
 
-                $missingMilestones = array_values(array_diff($requiredMilestones, $currentStandardMilestones));
-
-                // Ghi nhận mốc thiếu (MISSING) đính kèm tên đuôi kế thừa
-                foreach ($missingMilestones as $missingName) {
-                    $fullName = !empty($sharedSuffix) ? $missingName . ' - ' . $sharedSuffix : $missingName;
-
-                    $bulkReportData[] = [
-                        'period'         => $period,
-                        'project_name'   => $projectName,
-                        'ticket_code'    => $ticketCode,
-                        'report_type'    => 'MISSING',
-                        'milestone_name' => mb_substr($fullName, 0, 255),
-                        'created_at'     => now(),
-                        'updated_at'     => now(),
-                    ];
-                }
-
-                // Ghi nhận mốc sai định dạng (EXCEPTION)
-                foreach ($currentExceptionMilestones as $excItem) {
-                    $excName = $excItem['milestone_name'];
-                    $excSuffix = $excItem['suffix_text'] ?: $sharedSuffix;
-                    $fullName = !empty($excSuffix) ? $excName . ' - ' . $excSuffix : $excName;
-
-                    $bulkReportData[] = [
-                        'period'         => $period,
-                        'project_name'   => $projectName,
-                        'ticket_code'    => $ticketCode,
-                        'report_type'    => 'EXCEPTION',
-                        'milestone_name' => mb_substr($fullName, 0, 255),
-                        'created_at'     => now(),
-                        'updated_at'     => now(),
-                    ];
-                }
+                $bulkReportData[] = [
+                    'period'         => $period,
+                    'project_name'   => $projectName,
+                    'ticket_code'    => $ticketCode,
+                    'report_type'    => 'EXCEPTION',
+                    'milestone_name' => mb_substr($fullName, 0, 255),
+                    'created_at'     => now(),
+                    'updated_at'     => now(),
+                ];
             }
         }
 
@@ -286,8 +293,8 @@ class SyncIssueService extends ConnectJiraService
 
                 foreach ($processedTickets as $ticket) {
                     DB::table('jira_milestones')
-                        ->where('period', $ticket['period'])
-                        ->where('ticket_code', $ticket['ticket_code'])
+                        ->where('period', (string) $ticket['period'])
+                        ->where('ticket_code', (string) $ticket['ticket_code'])
                         ->delete();
                 }
 
