@@ -3,7 +3,6 @@
 namespace App\Services\Sync;
 
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log;
 
 class IssueTransformerService
 {
@@ -142,12 +141,6 @@ class IssueTransformerService
 
         if ($logWorkDateDone) {
             if ($logWorkDateDone->greaterThan($endDate)) {
-                Log::info('Thông báo: Issue này đã quá hạn', [
-                    'key' => $key,
-                    'enddate' => $endDate->toDateTimeString(),
-                    'enddate_last' => $logWorkDateDone->toDateTimeString()
-                ]);
-
                 $currentStatus = 'Overdue';
                 $statusText = "Quá hạn " . $this->formatDetailedDuration($endDate, $logWorkDateDone);
             } else {
@@ -156,21 +149,11 @@ class IssueTransformerService
         } else {
             $now = Carbon::now('Asia/Ho_Chi_Minh');
             if ($now->greaterThan($endDate)) {
-                Log::info('Thông báo: Issue này đã quá hạn', [
-                    'key' => $key,
-                    'current_time' => $now->toDateTimeString()
-                ]);
-
                 $currentStatus = 'Missing';
                 $statusText = "Thiếu log work (Quá hạn " . $this->formatDetailedDuration($endDate, $now) . ")";
             } elseif ($now->isSameDay($endDate)) {
                 $remindTime = Carbon::today('Asia/Ho_Chi_Minh')->setTime(17, 30, 0);
                 if ($now->greaterThanOrEqualTo($remindTime)) {
-                    Log::info('Thông báo: Issue sắp hết hạn vào hôm nay...', [
-                        'key' => $key,
-                        'current_time' => $now->toDateTimeString()
-                    ]);
-
                     $currentStatus = 'Warning';
                 }
                 $statusText = "Hạn cuối ngày";
@@ -198,12 +181,6 @@ class IssueTransformerService
 
         if ($doneCreatedAt) {
             if ($doneCreatedAt->greaterThan($endDate)) {
-                Log::info('Thông báo: Issue này đã quá hạn', [
-                    'key'          => $key,
-                    'enddate'      => $endDate->toDateTimeString(),
-                    'enddate_last' => $doneCreatedAt->toDateTimeString()
-                ]);
-
                 $currentStatus = 'Overdue';
                 $statusText = "Quá hạn " . $this->formatDetailedDuration($endDate, $doneCreatedAt);
             } else {
@@ -213,20 +190,11 @@ class IssueTransformerService
         } else {
             $now = Carbon::now('Asia/Ho_Chi_Minh');
             if ($now->greaterThan($endDate)) {
-                Log::info('Thông báo: Issue này đã quá hạn', [
-                    'key'          => $key,
-                    'current_time' => $now->toDateTimeString()
-                ]);
-
                 $currentStatus = 'Overdue';
                 $statusText = "Quá hạn " . $this->formatDetailedDuration($endDate, $now);
             } elseif ($now->isSameDay($endDate)) {
                 $remindTime = Carbon::today('Asia/Ho_Chi_Minh')->setTime(17, 30, 0);
                 if ($now->greaterThanOrEqualTo($remindTime)) {
-                    Log::info('Thông báo: Issue sắp hết hạn vào hôm nay...', [
-                        'key'          => $key,
-                        'current_time' => $now->toDateTimeString()
-                    ]);
 
                     $currentStatus = 'Warning';
                 }
