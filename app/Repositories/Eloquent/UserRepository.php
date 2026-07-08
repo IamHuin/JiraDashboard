@@ -17,7 +17,6 @@ class UserRepository implements UserInterface
             [
                 'jira_password' => Crypt::encryptString($dto->jira_password),
                 'jira_display_name' => $userData['displayName'] ?? 'unknown',
-                'jira_email' => $userData['emailAddress'] ?? 'unknown',
             ]
         );
     }

@@ -14,6 +14,7 @@ class DashboardDTO extends DataTransferObject
     public ?string $status;
     public ?string $statusLogWork;
     public int $table_id;
+    public ?string $report_type;
 
     public static function fromArray(array $data): DashboardDTO
     {
@@ -25,6 +26,7 @@ class DashboardDTO extends DataTransferObject
             status: $data['status'] ?? null,
             statusLogWork: $data['statusLogWork'] ?? null,
             table_id: $data['table_id'] ?? 0,
+            report_type: $data['report_type'] ?? null,
         );
     }
 
@@ -38,6 +40,7 @@ class DashboardDTO extends DataTransferObject
             'status' => $this->status,
             'statusLogWork' => $this->statusLogWork,
             'table_id' => $this->table_id,
+            'report_type' => $this->report_type,
         ];
     }
 }

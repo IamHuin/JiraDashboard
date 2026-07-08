@@ -1,0 +1,29 @@
+services:
+  app:
+    image: dockerhub.viettelsoftware.com/bu01-reg/jira-dashboard:1.0.0
+    pull_policy: always
+    container_name: jira-dashboard
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  db:
+    image: mirror.gcr.io/library/mariadb:10.4
+    container_name: jira-mariadb
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MARIADB_ROOT_PASSWORD: secret
+      MARIADB_DATABASE: jira_dashboard
+      MARIADB_USER: jira
+      MARIADB_PASSWORD: secret
+    volumes:
+      - jira_data:/var/lib/mysql
+
+volumes:
+  jira_data:

@@ -11,12 +11,8 @@ class ManagerRepository implements ManagerInterface
     public function getListUsers(ManagerDTO $dto)
     {
         return DB::table('users')
-            ->select('id', 'jira_username', 'jira_display_name', 'jira_email', 'is_admin')
+            ->select('id', 'jira_username', 'jira_display_name', 'is_admin')
             ->where('super_admin', 0)
-
-            ->when($dto->email, function ($query, $email) {
-                $query->where('jira_email', 'like', "%{$email}%");
-            })
 
             ->when($dto->is_admin !== null, function ($query) use ($dto) {
                 $query->where('is_admin', $dto->is_admin);

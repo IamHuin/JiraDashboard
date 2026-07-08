@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Dashboard;
 use App\DTO\Dashboard\DashboardDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Dashboard\DashboardRequest;
+use App\Http\Requests\Milestone\MilestoneRequest;
 use App\Http\Requests\Overdue\OverdueRequest;
 use App\Services\Dashboard\DashboardService;
 use Illuminate\Http\JsonResponse;
@@ -117,6 +118,17 @@ class DashboardController extends Controller
             $dto->period,
             $dto->user_name,
             $dto->project_names
+        );
+
+        return response()->json($result);
+    }
+    public function getMilestones(MilestoneRequest $request): JsonResponse
+    {
+        $dto = DashboardDTO::fromArray($request->validated());
+        $result = $this->dashboardService->getMilestones(
+            $dto->period,
+            $dto->report_type,
+            $dto->project_names,
         );
 
         return response()->json($result);

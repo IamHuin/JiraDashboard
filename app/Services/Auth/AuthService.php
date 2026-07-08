@@ -56,7 +56,6 @@ class AuthService
         return [
             'token' => $token,
             'display_name' => $userData['displayName'] ?? $userData['name'] ?? 'unknown',
-            'email' => $userData['emailAddress'] ?? 'unknown',
             'super_admin' => $user->super_admin ?? 0,
         ];
     }
@@ -77,7 +76,6 @@ class AuthService
         return [
             'token' => $token,
             'display_name' => $user->jira_display_name ?? 'Super Admin',
-            'email' => $user->jira_email ?? 'admin@gmail.com',
             'super_admin' => $user->super_admin ?? 0,
         ];
     }
