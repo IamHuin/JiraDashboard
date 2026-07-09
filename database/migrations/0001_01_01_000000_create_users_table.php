@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('jira_username')->unique();
             $table->string('jira_password');
-            $table->foreignId('role_id')->constrained('roles');
+//            $table->foreignId('role_id')->constrained('roles');
             $table->json('jira_projects_json')->nullable();
             $table->json('jira_projects_role_json')->nullable();
             $table->string('jira_display_name')->nullable();

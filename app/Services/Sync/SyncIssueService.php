@@ -44,8 +44,10 @@ class SyncIssueService extends ConnectJiraService
         $user->jira_password = Crypt::decryptString($user->jira_password);
 
         $maxResults = 50;
-        $fieldsParam = "&fields=project,summary,issuetype,assignee,customfield_11321,customfield_11323,customfield_11306,status,created,customfield_10108,customfield_10115,subtasks";
 
+        $fieldsParam = "&fields=project,summary,issuetype,assignee,customfield_11321,customfield_11323,customfield_11306,status,created,customfield_10108,customfield_10115,subtasks&expand=changelog";
+
+        // Tạo URL cho đợt check đầu tiên nhằm lấy "total" số lượng bản ghi
         $firstUrl = "/rest/api/2/search?jql=" . urlencode($jql) . "&startAt=0&maxResults={$maxResults}" . $fieldsParam;
         $firstData = $this->connectToJira($user, $firstUrl);
 
@@ -57,9 +59,10 @@ class SyncIssueService extends ConnectJiraService
         $total = $firstData['total'] ?? 0;
         $jobs = [];
 
-        $jobs[] = new ProcessJiraChunkJob($firstData['issues']);
+        $jobs[] = new ProcessJiraChunkJob(null, $firstUrl, $originalUser);
         unset($firstData);
 
+        // Vòng lặp lấy các page tiếp theo (nếu có)
         if ($total > $maxResults) {
             for ($startAt = $maxResults; $startAt < $total; $startAt += $maxResults) {
                 $url = "/rest/api/2/search?jql=" . urlencode($jql) . "&startAt={$startAt}&maxResults={$maxResults}" . $fieldsParam;
@@ -67,6 +70,7 @@ class SyncIssueService extends ConnectJiraService
             }
         }
 
+        // Chạy Batch Job song song trên Queue
         Bus::batch($jobs)
             ->then(function () use ($originalUser) {
                 ProcessMilestonesJob::dispatch($originalUser)->onQueue('jira-sync');

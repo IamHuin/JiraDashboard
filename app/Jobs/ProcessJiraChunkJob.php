@@ -38,12 +38,13 @@ class ProcessJiraChunkJob implements ShouldQueue
 
     public function handle(
         SyncIssueInterface $syncRepo,
-        IssueOverdueInterface $issueOverdueRepo,
-        IssueTransformerService $transformer
+        IssueOverdueInterface $issueOverdueRepo
     ): void {
         if ($this->batch()?->cancelled()) {
             return;
         }
+
+        $transformer = app(IssueTransformerService::class);
 
         try {
             if ($this->url && $this->user) {
@@ -67,7 +68,7 @@ class ProcessJiraChunkJob implements ShouldQueue
             $transformedIssues = $transformer->transformMany($issues);
             $syncRepo->saveIssues($transformedIssues);
 
-            // 2. Xử lý Overdue trực tiếp cho chunk hiện tại (Map chuẩn theo Schema DB của bạn)
+            // 2. Xử lý Overdue trực tiếp (Truyền $transformer sạch xuống)
             $this->processOverdue($issues, $issueOverdueRepo, $transformer);
 
             // 3. Cập nhật mốc thời gian lớn nhất
@@ -85,7 +86,7 @@ class ProcessJiraChunkJob implements ShouldQueue
         }
     }
 
-    protected function processOverdue(array $issues, $issueOverdueRepo, $transformer): void
+    protected function processOverdue(array $issues, $issueOverdueRepo, IssueTransformerService $transformer): void
     {
         $targetTypes = ['Sub-task', 'Story', 'Milestone'];
         $bulkOverdueData = [];
@@ -115,7 +116,9 @@ class ProcessJiraChunkJob implements ShouldQueue
                     'created_at'   => now(),
                     'updated_at'   => now(),
                 ];
-            } catch (Exception $e) {}
+            } catch (Exception $e) {
+                Log::error("Lỗi tại transformSingle của key " . ($issueData['key'] ?? 'N/A') . ": " . $e->getMessage());
+            }
         }
 
         if (!empty($bulkOverdueData)) {

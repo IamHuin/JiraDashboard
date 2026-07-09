@@ -3,6 +3,7 @@
 namespace App\Services\Sync;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class IssueTransformerService
 {
@@ -138,6 +139,7 @@ class IssueTransformerService
                 'status_text' => 'Chưa có thời hạn',
             ];
         }
+        Log::info('$logWorkDateDone' . $logWorkDateDone);
 
         if ($logWorkDateDone) {
             if ($logWorkDateDone->greaterThan($endDate)) {

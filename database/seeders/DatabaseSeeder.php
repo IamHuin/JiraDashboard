@@ -16,17 +16,24 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         Role::updateOrCreate(
-            [
-                'name' => 'Super admin',
-                'jira_projects_json' => json_encode([])
-            ]
+            ['name' => 'Super Admin'],
+            ['jira_projects_json' => json_encode([])]
         );
+
+        Role::updateOrCreate(
+            ['name' => 'User'],
+            ['jira_projects_json' => json_encode([])]
+        );
+
+        $role_id = Role::where('name', 'Super Admin')->value('id');
+
         User::updateOrCreate(
             ['jira_username' => 'admin'],
             [
                 'jira_password'      => Hash::make('admin'),
                 'jira_display_name'  => 'Super Admin',
                 'super_admin'        => IsAdminEnum::YES,
+//                'role_id'            => $role_id,
             ]
         );
     }

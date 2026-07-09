@@ -10,7 +10,6 @@ class HandleBugRatioService
     {
         return $issues->filter(fn($issue) => $issue['issuetype'] === 'Bug' && !empty($issue['causer']))
             ->groupBy(function ($issue) {
-                // CẢI TIẾN: Hỗ trợ cả 'created' thô lẫn 'created_at' sau khi biến đổi
                 $dateRaw = $issue['created'] ?? $issue['created_at'] ?? $issue['created_at_jira'] ?? now();
                 $period = Carbon::parse($dateRaw)->format('m-Y');
                 return $period . '|' . $issue['causer'];
@@ -29,7 +28,6 @@ class HandleBugRatioService
     public function countSubTask($issues)
     {
         return $issues->filter(function ($issue) {
-            // CẢI TIẾN: Kiểm tra linh hoạt cả 'enddate' hoặc 'end_date_jira'
             $hasEndDate = !empty($issue['enddate']) || !empty($issue['end_date_jira']);
 
             return $issue['issuetype'] === 'Sub-task'
@@ -38,7 +36,6 @@ class HandleBugRatioService
                 && $hasEndDate;
         })
             ->groupBy(function ($issue) {
-                // CẢI TIẾN: Đọc linh hoạt 'enddate' hoặc 'end_date_jira' để tránh lỗi
                 $dateRaw = $issue['enddate'] ?? $issue['end_date_jira'] ?? now();
                 $period = Carbon::parse($dateRaw)->format('m-Y');
                 return $period . '|' . $issue['assignee'];
@@ -65,11 +62,6 @@ class HandleBugRatioService
             "COD_Sửa lỗi gây ra lỗi mới"
         ];
 
-        // --- ĐOẠN DEBUG 1: Kiểm tra cấu trúc phần tử đầu tiên xem có causer_category không ---
-        if ($issues->isNotEmpty()) {
-            \Log::info("DEBUG MISSING - Gốc phần tử đầu tiên:", ['first_issue' => $issues->first()]);
-        }
-
         $filtered = $issues->filter(function ($issue) use ($validCategories) {
             $isBug = $issue['issuetype'] === 'Bug';
             $hasCauser = !empty($issue['causer']);
@@ -78,22 +70,8 @@ class HandleBugRatioService
             $categoryValue = $issue['causer_category'] ?? null;
             $isNotValid = !in_array($categoryValue, $validCategories);
 
-            // --- ĐOẠN DEBUG 2: Log lý do tại sao từng thằng Bug bị loại bỏ ---
-            if ($isBug) {
-                \Log::info("DEBUG MISSING - Chi tiết Bug:", [
-                    'key' => $issue['key'] ?? 'N/A',
-                    'has_causer' => $hasCauser,
-                    'category_value' => $categoryValue,
-                    'has_category' => $hasCategory,
-                    'is_not_in_valid_list' => $isNotValid,
-                ]);
-            }
-
             return $isBug && $hasCauser && $hasCategory && $isNotValid;
         });
-
-        // --- ĐOẠN DEBUG 3: Xem sau khi lọc xong còn cái nào không ---
-        \Log::info("DEBUG MISSING - Số lượng sau khi filter: " . $filtered->count());
 
         return $filtered
             ->groupBy(function ($issue) {
