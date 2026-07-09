@@ -3,6 +3,7 @@
 namespace App\Services\Auth;
 
 use App\DTO\Auth\AuthDTO;
+use App\Enums\IsAdminEnum;
 use App\Models\Role;
 use App\Repositories\Interfaces\UserInterface;
 use App\Services\Ping\ConnectJiraService;
@@ -56,7 +57,8 @@ class AuthService
         $responseData = [
             'token' => $token,
             'display_name' => $userData['displayName'] ?? $userData['name'] ?? 'unknown',
-            'super_admin' => $user->super_admin ?? 0,
+            'super_admin' => $user->super_admin ?? IsAdminEnum::NO,
+            'is_admin' => $user->is_admin ?? IsAdminEnum::NO,
         ];
 
         unset($userData, $user, $token);
@@ -80,7 +82,8 @@ class AuthService
         return [
             'token' => $token,
             'display_name' => $user->jira_display_name ?? 'Super Admin',
-            'super_admin' => $user->super_admin ?? 1,
+            'super_admin' => $user->super_admin ?? IsAdminEnum::YES,
+            'is_admin' => $user->is_admin ?? IsAdminEnum::YES,
         ];
     }
 }
