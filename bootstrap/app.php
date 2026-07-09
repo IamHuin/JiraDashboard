@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\isAdminMiddleware;
 use App\Http\Middleware\isSuperAdminMiddleware;
 use App\Http\Middleware\isUserMiddleware;
 use Illuminate\Foundation\Application;
@@ -18,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'isSuperAdmin' => isSuperAdminMiddleware::class,
             'isUser' => isUserMiddleware::class,
+            'isAdmin' => isAdminMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

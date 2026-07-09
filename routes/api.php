@@ -17,12 +17,14 @@ Route::middleware('auth:api')->group(function () {
         Route::get('manager', [ManagerController::class, 'getListUsers'])->name('admin.manager');
         Route::post('manager/user', [ManagerController::class, 'updateUser'])->name('admin.users.update');
     });
-    Route::middleware('isUser')->prefix('issues')->group(function () {
+    Route::middleware('isAdmin')->prefix('issues')->group(function () {
         Route::prefix('sync')->group(function () {
             Route::get('full_issues', [SyncIssueController::class, 'syncFullIssues'])->name('sync.full_issues');
             Route::get('from_last_issues', [SyncIssueController::class, 'syncFromLastIssues'])->name('sync.from_last_issues');
             Route::get('status/{mode}', [SyncIssueController::class, 'status']);
         });
+    });
+    Route::middleware('isUser')->prefix('issues')->group(function () {
 
         Route::prefix('cache')->group(function () {
             Route::get('get_tracked_cache_keys', [DashboardController::class, 'getTrackedCacheKeys'])->name('cache.get_tracked_cache_keys');
