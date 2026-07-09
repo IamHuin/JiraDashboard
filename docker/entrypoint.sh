@@ -32,10 +32,10 @@ fi
 php artisan config:cache
 
 echo "Running migrations..."
-php artisan migrate:fresh --seed
+php artisan migrate --force
 
-#echo "Seeding admin account..."
-#php artisan db:seed --force
+echo "Seeding admin account..."
+php artisan db:seed --force
 
 php artisan route:cache
 php artisan view:cache
