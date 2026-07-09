@@ -43,6 +43,9 @@ php artisan view:cache
 chown -R www-data:www-data storage bootstrap/cache
 chmod -R 775 storage bootstrap/cache
 
+echo "Starting queue worker for jira-sync..."
+php artisan queue:work --queue=jira-sync --tries=3 --timeout=600 &
+
 echo "Entrypoint finished, starting Apache..."
 
 exec "$@"
