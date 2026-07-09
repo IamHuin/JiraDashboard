@@ -3,16 +3,16 @@
 namespace App\Jobs;
 
 use App\Enums\SyncStatus;
-use App\Models\User;
 use App\Events\IssuesSync;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Log;
 
 class ProcessMilestonesJob implements ShouldQueue
@@ -102,6 +102,7 @@ class ProcessMilestonesJob implements ShouldQueue
                 'issuetype'   => $issue->issuetype,
                 'assignee'    => $issue->assignee,
                 'causer'      => $issue->causer,
+                'causer_category' => $issue->causer_category,
                 'ulnl'        => $issue->ulnl,
                 'slsx'        => $issue->slsx,
                 'status'      => $issue->status,
