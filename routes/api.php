@@ -4,7 +4,6 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Dashboard\SyncIssueController;
 use App\Http\Controllers\Manager\ManagerController;
-use App\Http\Controllers\Role\RoleController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
