@@ -30,17 +30,24 @@ class ProjectRepository implements ProjectInterface
     public function getProjectsJson(int $userId): array
     {
         $user = User::find($userId);
-
-        if (!$user || !$user->jira_projects_json) {
+        if (!$user) {
             return [];
         }
 
-        if (is_string($user->jira_projects_json)) {
-            $projectUser = json_decode($user->jira_projects_json, true) ?? [];
-            return DB::table('jira_projects')->select('key', 'name')->whereIn('id', $projectUser)->get()->toArray();
+        $userProjects = parse_json_to_array($user->jira_projects_json);
+        $roleProjects = parse_json_to_array($user->jira_projects_role_json);
+
+        $mergedProjectIds = array_unique(array_merge($userProjects, $roleProjects));
+
+        if (empty($mergedProjectIds)) {
+            return [];
         }
 
-        return $user->jira_projects_json;
+        return DB::table('jira_projects')
+            ->select('key', 'name')
+            ->whereIn('id', $mergedProjectIds)
+            ->get()
+            ->toArray();
     }
 
     public function getAllProjects(): array

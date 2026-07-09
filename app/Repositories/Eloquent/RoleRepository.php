@@ -1,0 +1,94 @@
+<?php
+
+namespace App\Repositories\Eloquent;
+
+use App\Models\Role;
+use App\Repositories\Interfaces\RoleInterface;
+use Exception;
+use Illuminate\Support\Facades\Log;
+
+class RoleRepository implements RoleInterface
+{
+    /**
+     * Lấy danh sách tất cả các Roles
+     */
+    public function getListRoles()
+    {
+        return Role::query()->select('id', 'name')->orderBy('id', 'desc')->get();
+    }
+
+    /**
+     * Xem chi tiết một Role
+     */
+    public function getDetailRole($id)
+    {
+        return Role::find($id);
+    }
+
+    /**
+     * Tạo mới một Role và lưu mảng project dưới dạng JSON
+     */
+    public function createRole(array $data)
+    {
+        try {
+            $jiraProjectJson = isset($data['project_keys']) ? json_encode($data['project_keys']) : json_encode([]);
+
+            $role = Role::create([
+                'name'               => $data['name'],
+                'jira_projects_json' => $jiraProjectJson
+            ]);
+
+            return $role;
+        } catch (Exception $e) {
+            Log::error("Repository Create Role Error: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Cập nhật thông tin Role và chuỗi JSON project
+     */
+    public function updateRole($id, array $data)
+    {
+        try {
+            $role = Role::find($id);
+            if (!$role) {
+                return null;
+            }
+
+            $updateData = [
+                'name' => $data['name']
+            ];
+
+            if (isset($data['project_keys'])) {
+                $updateData['jira_projects_json'] = json_encode($data['project_keys']);
+            }
+
+            $role->update($updateData);
+
+            return $role;
+        } catch (Exception $e) {
+            Log::error("Repository Update Role Error: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Xóa thẳng Role
+     */
+    public function deleteRole($id)
+    {
+        try {
+            $role = Role::find($id);
+            if (!$role) {
+                return false;
+            }
+
+            $role->delete();
+            return true;
+        } catch (Exception $e) {
+            Log::error("Repository Delete Role Error: " . $e->getMessage());
+            throw $e;
+        }
+    }
+}

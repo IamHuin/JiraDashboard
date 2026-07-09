@@ -16,7 +16,7 @@ class ConnectJiraService
     {
         $this->baseUri = config('services.jira.base_uri', 'https://jira.viettelsoftware.com');
         $this->startAt = config('services.jira.start_at', 0);
-        $this->maxResults = config('services.jira.max_results', 200);
+        $this->maxResults = config('services.jira.max_results', 50);
     }
 
     public function initClient($user)

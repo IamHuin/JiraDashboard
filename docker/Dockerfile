@@ -31,6 +31,10 @@ RUN unzip -o dependencies.zip \
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
+
 EXPOSE 80
 
 CMD ["apache2-foreground"]
