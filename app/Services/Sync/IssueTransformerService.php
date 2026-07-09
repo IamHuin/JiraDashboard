@@ -139,7 +139,6 @@ class IssueTransformerService
                 'status_text' => 'Chưa có thời hạn',
             ];
         }
-        Log::info('$logWorkDateDone' . $logWorkDateDone);
 
         if ($logWorkDateDone) {
             if ($logWorkDateDone->greaterThan($endDate)) {
