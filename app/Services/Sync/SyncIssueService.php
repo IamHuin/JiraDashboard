@@ -3,396 +3,117 @@
 namespace App\Services\Sync;
 
 use App\DTO\Project\ProjectDTO;
-use App\Events\IssuesSync;
 use App\Models\User;
-use App\Repositories\Interfaces\IssueOverdueInterface;
 use App\Repositories\Interfaces\ProjectInterface;
 use App\Repositories\Interfaces\SyncIssueInterface;
 use App\Services\Ping\ConnectJiraService;
+use App\Jobs\ProcessJiraChunkJob;
+use App\Jobs\ProcessMilestonesJob;
+use App\Enums\SyncStatus;
 use Carbon\Carbon;
 use Exception;
-use GuzzleHttp\Exception\RequestException;
-use GuzzleHttp\Pool;
-use GuzzleHttp\Psr7\Response;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Cache;
 use Log;
+use Throwable;
 
 class SyncIssueService extends ConnectJiraService
 {
     protected $syncRepo;
     protected $projectRepo;
-    protected $issueOverdueRepo;
-    protected $transformer;
-
-    protected $latestCreatedTime = null;
-    protected $allTransformedIssuesForEvent = [];
-
-    // Biến tích lũy milestone thô từ tất cả các trang
-    protected array $collectedMilestonesRaw = [];
 
     public function __construct(
-        SyncIssueInterface    $syncRepo,
-        ProjectInterface      $projectRepo,
-        IssueOverdueInterface   $issueOverdueRepo,
-        IssueTransformerService $transformer
-    )
-    {
+        SyncIssueInterface $syncRepo,
+        ProjectInterface   $projectRepo
+    ) {
         parent::__construct();
         $this->syncRepo = $syncRepo;
         $this->projectRepo = $projectRepo;
-        $this->issueOverdueRepo = $issueOverdueRepo;
-        $this->transformer = $transformer;
     }
 
-    /**
-     * @param string $jql
-     * @param User   $originalUser  User gốc (jira_password còn ở dạng encrypted), truyền từ Job/Controller vào
-     */
-    protected function fetchAndProcessIssuesByJql(string $jql, User $originalUser): void
+    protected function fetchAndProcessIssuesByJql(string $jql, User $originalUser, string $mode): void
     {
         DB::disableQueryLog();
         set_time_limit(0);
 
-        // syncAndFetchProjects tự lo decrypt riêng, nên truyền user gốc (chưa decrypt) vào đây
         $this->syncAndFetchProjects($originalUser);
 
         $user = clone $originalUser;
         $user->jira_password = Crypt::decryptString($user->jira_password);
 
-        $maxResults = $this->maxResults ?? 100;
-        $fieldsParam = "&fields=project,summary,issuetype,assignee,customfield_11321,customfield_11323,customfield_11306,status,created,customfield_10108,customfield_10115,subtasks";
+        $maxResults = 50;
 
-        $this->latestCreatedTime = null;
-        $this->allTransformedIssuesForEvent = [];
-        $this->collectedMilestonesRaw = [];
+        $fieldsParam = "&fields=project,summary,issuetype,assignee,customfield_11321,customfield_11323,customfield_11306,status,created,customfield_10108,customfield_10115,subtasks&expand=changelog";
 
-        $firstUrl = "/rest/api/2/search?jql=" . urlencode($jql) . "&startAt=0&maxResults={$maxResults}&expand=changelog" . $fieldsParam;
+        // Tạo URL cho đợt check đầu tiên nhằm lấy "total" số lượng bản ghi
+        $firstUrl = "/rest/api/2/search?jql=" . urlencode($jql) . "&startAt=0&maxResults={$maxResults}" . $fieldsParam;
         $firstData = $this->connectToJira($user, $firstUrl);
 
         if (!empty($firstData['error']) || empty($firstData['issues'])) {
+            Cache::put("jira-sync-status:{$originalUser->id}:{$mode}", SyncStatus::FAILED->value, now()->addMinutes(30));
             return;
         }
 
-        $this->chunkProcess($firstData['issues']);
         $total = $firstData['total'] ?? 0;
+        $jobs = [];
 
+        $jobs[] = new ProcessJiraChunkJob(null, $firstUrl, $originalUser);
         unset($firstData);
-        gc_collect_cycles();
 
-        if ($total <= $maxResults) {
-            $this->finalizeSync();
-            return;
-        }
-
-        $client = $this->initClient($user);
-        $generator = function () use ($user, $jql, $total, $maxResults, $fieldsParam) {
+        // Vòng lặp lấy các page tiếp theo (nếu có)
+        if ($total > $maxResults) {
             for ($startAt = $maxResults; $startAt < $total; $startAt += $maxResults) {
-                $url = "/rest/api/2/search?jql=" . urlencode($jql) . "&startAt={$startAt}&maxResults={$maxResults}&expand=changelog" . $fieldsParam;
-                yield function () use ($user, $url) {
-                    return $this->connectToJiraAsync($user, $url);
-                };
-            }
-        };
-
-        $pool = new Pool($client, $generator(), [
-            'concurrency' => 10,
-            'fulfilled' => function (Response $response) {
-                $body = json_decode($response->getBody()->getContents(), true);
-                if (!empty($body['issues'])) {
-                    $this->chunkProcess($body['issues']);
-                }
-                unset($body, $response);
-                gc_collect_cycles();
-            },
-            'rejected' => function (RequestException $reason) {
-                Log::error("Jira Sync Page Failed: " . $reason->getMessage());
-            },
-        ]);
-
-        $pool->promise()->wait();
-        $this->finalizeSync();
-    }
-
-    protected function chunkProcess(array $rawIssuesChunk): void
-    {
-        $collectionChunk = collect($rawIssuesChunk);
-
-        $transformedIssues = $this->transformer->transformMany($rawIssuesChunk);
-        $this->syncRepo->saveIssues($transformedIssues);
-
-        $this->allTransformedIssuesForEvent = array_merge($this->allTransformedIssuesForEvent, $transformedIssues);
-        $this->processOverdueDirectly($collectionChunk);
-        $this->collectMilestonesRawData($collectionChunk);
-
-        $maxCreated = $collectionChunk->map(fn($issue) => $issue['fields']['created'] ?? null)->filter()->max();
-        if ($maxCreated && (is_null($this->latestCreatedTime) || $maxCreated > $this->latestCreatedTime)) {
-            $this->latestCreatedTime = $maxCreated;
-        }
-
-        unset($transformedIssues, $collectionChunk);
-    }
-
-    protected function collectMilestonesRawData(Collection $rawIssues): void
-    {
-        $requiredMilestones = [
-            'Gửi Kế hoạch PYC', 'Gửi Tài liệu giải pháp để Review/Xác nhận', 'Gửi ULNL sơ bộ',
-            'Chốt ULNL', 'Bàn giao', 'Giải pháp Done', 'Demo/FI nội bộ', 'Test Done', 'Dev Done'
-        ];
-
-        $sortedMilestones = collect($requiredMilestones)->sortByDesc(fn($m) => strlen($m))->toArray();
-        $milestonePattern = '/' . implode('|', array_map(fn($m) => preg_quote($m, '/'), $sortedMilestones)) . '/i';
-
-        foreach ($rawIssues as $issueData) {
-            if (($issueData['fields']['issuetype']['name'] ?? null) !== 'Milestone') {
-                continue;
-            }
-
-            try {
-                $summary = trim($issueData['fields']['summary'] ?? '');
-                $ticketCode = null;
-                $milestoneName = null;
-                $isException = false;
-                $suffixText = '';
-
-                $hasMilestone = preg_match($milestonePattern, $summary, $milestoneMatches);
-
-                if ($hasMilestone) {
-                    $matchedName = trim($milestoneMatches[0]);
-                    $milestoneName = collect($requiredMilestones)->first(fn($m) => strcasecmp($m, $matchedName) === 0) ?? $matchedName;
-                    $remainingSummary = str_ireplace($matchedName, '', $summary);
-                } else {
-                    $isException = true;
-                    if (preg_match('/^([^-–—]+)/ui', $summary, $exMatches)) {
-                        $milestoneName = trim($exMatches[1]);
-                    } else {
-                        $milestoneName = 'Mốc không rõ tên';
-                    }
-                    $remainingSummary = $summary;
-                }
-
-                $matchedTextForSuffix = null;
-
-                // 1. ƯU TIÊN 1: Tìm dạng có cả chữ và số kết nối gạch ngang (Ví dụ: "VICPYC-3370", "PYC-3370")
-                if (preg_match('/([A-Z0-9]+-\d+)/ui', $remainingSummary, $ticketMatches)) {
-                    $ticketCode = strtoupper(trim($ticketMatches[1]));
-                    $matchedTextForSuffix = $ticketMatches[1];
-                }
-                // ƯU TIÊN 2: Nếu không tồn tại định dạng chữ-số, mới bắt số độc lập (Ví dụ: "3370")
-                elseif (preg_match('/(?<![A-Z0-9])(\d+)(?![A-Z0-9])/ui', $remainingSummary, $ticketMatches)) {
-                    $ticketCode = trim($ticketMatches[1]);
-                    $matchedTextForSuffix = $ticketMatches[1];
-                }
-
-                // 2. BÓC TÁCH PHẦN ĐUÔI ĐẰNG SAU MÃ PHIẾU VỪA TÌM ĐƯỢC
-                if ($ticketCode && $matchedTextForSuffix) {
-                    $pos = mb_strpos($remainingSummary, $matchedTextForSuffix);
-                    if ($pos !== false) {
-                        $rawSuffix = mb_substr($remainingSummary, $pos + mb_strlen($matchedTextForSuffix));
-                        $suffixText = trim(preg_replace('/^[\s\-_–—\/|:()]+/u', '', $rawSuffix));
-                    }
-                }
-
-                // 3. CHỈ LƯU NẾU TÌM THẤY SỐ PHIẾU HỢP LỆ (Bỏ qua mốc thiếu thông tin số hiệu)
-                if ($ticketCode) {
-                    $createdAtJira = $issueData['fields']['created'] ?? null;
-                    $period = $createdAtJira ? Carbon::parse($createdAtJira)->format('m-Y') : Carbon::now()->format('m-Y');
-
-                    $this->collectedMilestonesRaw[] = [
-                        'ticket_code'    => strtoupper($ticketCode),
-                        'project_name'   => $issueData['fields']['project']['name'] ?? 'Dự án không tên',
-                        'milestone_name' => $milestoneName,
-                        'period'         => $period,
-                        'is_exception'   => $isException,
-                        'suffix_text'    => $suffixText
-                    ];
-                }
-
-            } catch (Exception $e) {
-                Log::error("Lỗi trích xuất Milestone: " . $e->getMessage());
-            }
-        }
-    }
-
-    protected function processMilestones(array $rawMilestones): array
-    {
-        $requiredMilestones = [
-            'Gửi Kế hoạch PYC',
-            'Gửi Tài liệu giải pháp để Review/Xác nhận',
-            'Gửi ULNL sơ bộ',
-            'Chốt ULNL',
-            'Bàn giao',
-            'Giải pháp Done',
-            'Demo/FI nội bộ',
-            'Test Done',
-            'Dev Done'
-        ];
-
-        $grouped = collect($rawMilestones)->groupBy(
-            fn($item) => $item['period'] . '|||' . $item['ticket_code']
-        );
-
-        $bulkReportData = [];
-        $processedTickets = [];
-
-        foreach ($grouped as $groupKey => $issues) {
-            $issuesCollection = collect($issues);
-
-            $period = (string) $issuesCollection->first()['period'];
-            $ticketCode = (string) $issuesCollection->first()['ticket_code'];
-            $projectName = $issuesCollection->first()['project_name'] ?? 'Dự án không tên';
-
-            $sharedSuffix = $issuesCollection->where('suffix_text', '!=', '')->pluck('suffix_text')->first() ?? '';
-
-            $processedTickets[] = [
-                'period'      => $period,
-                'ticket_code' => $ticketCode
-            ];
-
-            $currentStandardMilestones = $issuesCollection->where('is_exception', false)->pluck('milestone_name')->unique()->toArray();
-            $currentExceptionMilestones = $issuesCollection->where('is_exception', true)->unique(fn($item) => $item['milestone_name'] . $item['suffix_text']);
-
-            $missingMilestones = array_values(array_diff($requiredMilestones, $currentStandardMilestones));
-
-            foreach ($missingMilestones as $missingName) {
-                $fullName = !empty($sharedSuffix) ? $missingName . ' - ' . $sharedSuffix : $missingName;
-
-                $bulkReportData[] = [
-                    'period'         => $period,
-                    'project_name'   => $projectName,
-                    'ticket_code'    => $ticketCode,
-                    'report_type'    => 'MISSING',
-                    'milestone_name' => mb_substr($fullName, 0, 255),
-                    'created_at'     => now(),
-                    'updated_at'     => now(),
-                ];
-            }
-
-            foreach ($currentExceptionMilestones as $excItem) {
-                $excName = $excItem['milestone_name'];
-                $excSuffix = $excItem['suffix_text'] ?: $sharedSuffix;
-                $fullName = !empty($excSuffix) ? $excName . ' - ' . $excSuffix : $excName;
-
-                $bulkReportData[] = [
-                    'period'         => $period,
-                    'project_name'   => $projectName,
-                    'ticket_code'    => $ticketCode,
-                    'report_type'    => 'EXCEPTION',
-                    'milestone_name' => mb_substr($fullName, 0, 255),
-                    'created_at'     => now(),
-                    'updated_at'     => now(),
-                ];
+                $url = "/rest/api/2/search?jql=" . urlencode($jql) . "&startAt={$startAt}&maxResults={$maxResults}" . $fieldsParam;
+                $jobs[] = new ProcessJiraChunkJob(null, $url, $originalUser);
             }
         }
 
-        if (!empty($processedTickets) || !empty($bulkReportData)) {
-            DB::transaction(function () use ($processedTickets, $bulkReportData) {
-
-                foreach ($processedTickets as $ticket) {
-                    DB::table('jira_milestones')
-                        ->where('period', (string) $ticket['period'])
-                        ->where('ticket_code', (string) $ticket['ticket_code'])
-                        ->delete();
-                }
-
-                if (!empty($bulkReportData)) {
-                    Log::info("Đang cập nhật báo cáo Milestone phẳng kèm Context vào DB: " . count($bulkReportData) . " dòng.");
-                    DB::table('jira_milestones')->upsert(
-                        $bulkReportData,
-                        ['period', 'ticket_code', 'report_type', 'milestone_name'],
-                        ['project_name', 'updated_at']
-                    );
-                }
-            });
-        }
-
-        return [
-            'status' => 'success',
-            'processed_count' => count($bulkReportData)
-        ];
-    }
-
-    protected function finalizeSync(): void
-    {
-        if ($this->latestCreatedTime) {
-            $this->syncRepo->updateSyncTime(Carbon::parse($this->latestCreatedTime)->format('Y-m-d H:i:s'));
-        }
-
-        if (!empty($this->collectedMilestonesRaw)) {
-            $this->processMilestones($this->collectedMilestonesRaw);
-        }
-
-        if (!empty($this->allTransformedIssuesForEvent)) {
-            event(new IssuesSync(collect($this->allTransformedIssuesForEvent)));
-        }
-
-        $this->allTransformedIssuesForEvent = [];
-        $this->collectedMilestonesRaw = [];
-        gc_collect_cycles();
+        // Chạy Batch Job song song trên Queue
+        Bus::batch($jobs)
+            ->then(function () use ($originalUser) {
+                ProcessMilestonesJob::dispatch($originalUser)->onQueue('jira-sync');
+            })
+            ->catch(function ($batch, Throwable $e) use ($originalUser, $mode) {
+                Cache::put("jira-sync-status:{$originalUser->id}:{$mode}", SyncStatus::FAILED->value, now()->addMinutes(30));
+                Log::error("Lỗi Batch Sync Jira hệ thống (User {$originalUser->id}): " . $e->getMessage());
+            })
+            ->name("Jira Sync - {$mode} - User {$originalUser->id}")
+            ->onQueue('jira-sync')
+            ->dispatch();
     }
 
     public function syncFullIssues(User $user): void
     {
-        $jql = 'issuetype IN (Bug, "Sub-task", Story, Milestone) AND status != Cancelled ORDER BY summary DESC, updated DESC';
-        $this->fetchAndProcessIssuesByJql($jql, $user);
+        $startOfMonth = Carbon::now()->subMonths(2)->startOfMonth()->format('Y-m-d');
+        $endDate = Carbon::now()->format('Y-m-d');
+
+        $jql = "issuetype IN (Bug, \"Sub-task\", Story, Milestone) 
+            AND status != Cancelled 
+            AND created >= '{$startOfMonth}' 
+            AND created <= '{$endDate}' 
+            ORDER BY created ASC";
+
+        $this->fetchAndProcessIssuesByJql($jql, $user, 'full');
     }
 
     public function syncFromLastIssues(User $user): void
     {
-        $startOfMonth = '2026-06-01';
-        $endDate = '2026-06-30';
-        $jql = "issuetype IN (Bug, \"Sub-task\", Story, Milestone) AND status != Cancelled AND created >= '{$startOfMonth}' AND created <= '{$endDate}' ORDER BY created ASC";
+        $lastSyncString = $this->syncRepo->getLastSyncTime();
 
-        $this->fetchAndProcessIssuesByJql($jql, $user);
+        $startSyncTime = !empty($lastSyncString)
+            ? Carbon::parse($lastSyncString)->subMinutes(30)->format('Y-m-d H:i')
+            : Carbon::now()->startOfMonth()->format('Y-m-d H:i');
+
+        $jql = "issuetype IN (Bug, \"Sub-task\", Story, Milestone) 
+        AND status != Cancelled 
+        AND created >= '{$startSyncTime}' 
+        ORDER BY created ASC";
+
+        $this->fetchAndProcessIssuesByJql($jql, $user, 'last');
     }
 
-    protected function processOverdueDirectly(Collection $rawIssues): void
-    {
-        $targetTypes = ['Sub-task', 'Story', 'Milestone'];
-        $bulkOverdueData = [];
-
-        foreach ($rawIssues as $issueData) {
-            $issueType = $issueData['fields']['issuetype']['name'] ?? null;
-
-            if (!in_array($issueType, $targetTypes)) {
-                continue;
-            }
-
-            try {
-                $detailData = $this->transformer->transformSingle($issueData);
-                $createdAtJira = $issueData['fields']['customfield_10108'] ?? null;
-                $period = $createdAtJira ? Carbon::parse($createdAtJira)->format('m-Y') : Carbon::now()->format('m-Y');
-
-                $bulkOverdueData[] = [
-                    'key'          => $issueData['key'] ?? null,
-                    'period'       => $period,
-                    'project_name' => $issueData['fields']['project']['name'] ?? $detailData['project'] ?? null,
-                    'summary'      => $issueData['fields']['summary'] ?? null,
-                    'issuetype'    => $issueType,
-                    'assignee'     => $detailData['assignee'] ?? null,
-                    'enddate'      => $detailData['enddate'] ?? null,
-                    'status'       => $detailData['status'] ?? null,
-                    'statusText' => $detailData['statusText'] ?? null,
-                    'statusLogWork' => $detailData['statusLogWork'] ?? null,
-                    'statusTextLogWork' => $detailData['statusTextLogWork'] ?? null,
-                    'created_at'   => now(),
-                    'updated_at'   => now(),
-                ];
-            } catch (Exception $e) {
-                Log::error("Lỗi Overdue: " . $e->getMessage());
-            }
-        }
-
-        if (!empty($bulkOverdueData)) {
-            $this->issueOverdueRepo->upsertIssues($bulkOverdueData);
-        }
-        unset($bulkOverdueData);
-    }
-
-    /**
-     * @param User $user  User gốc, jira_password còn ở dạng encrypted
-     */
     public function syncAndFetchProjects(User $user): array
     {
         $clonedUser = clone $user;

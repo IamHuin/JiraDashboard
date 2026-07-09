@@ -2,6 +2,28 @@
 
 use App\Enums\PaginateEnum;
 
+if (!function_exists('parse_json_to_array')) {
+    /**
+     * Ép mọi định dạng dữ liệu (JSON string, Array, Null, Trống) về mảng phẳng sạch sẽ
+     */
+    function parse_json_to_array($data): array
+    {
+        if (empty($data)) {
+            return [];
+        }
+
+        if (is_array($data)) {
+            return $data;
+        }
+
+        if (is_string($data)) {
+            return json_decode($data, true) ?? [];
+        }
+
+        return [];
+    }
+}
+
 if (!function_exists('format_dashboard_success')) {
     function format_dashboard_success(?string $userName, array $allowedProjectNames, ?string $period, array $issues): array
     {

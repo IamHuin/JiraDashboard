@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Dashboard\SyncIssueController;
 use App\Http\Controllers\Manager\ManagerController;
+use App\Http\Controllers\Role\RoleController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -15,7 +16,7 @@ Route::prefix('auth')->group(function () {
 Route::middleware('auth:api')->group(function () {
     Route::middleware('isSuperAdmin')->prefix('admin')->group(function () {
         Route::get('manager', [ManagerController::class, 'getListUsers'])->name('admin.manager');
-        Route::post('manager/user', [ManagerController::class, 'updateUser'])->name('admin.users.update');
+        Route::put('manager/user', [ManagerController::class, 'updateUser'])->name('admin.users.update');
     });
     Route::middleware('isUser')->prefix('issues')->group(function () {
         Route::prefix('sync')->group(function () {

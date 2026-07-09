@@ -3,6 +3,7 @@
 namespace App\Services\Auth;
 
 use App\DTO\Auth\AuthDTO;
+use App\Models\Role;
 use App\Repositories\Interfaces\UserInterface;
 use App\Services\Ping\ConnectJiraService;
 use App\Services\Sync\SyncIssueService;
@@ -19,8 +20,7 @@ class AuthService
         ConnectJiraService $jira,
         SyncIssueService   $syncService,
         UserInterface      $userRepo
-    )
-    {
+    ) {
         $this->jira = $jira;
         $this->syncService = $syncService;
         $this->userRepo = $userRepo;
@@ -50,14 +50,18 @@ class AuthService
         try {
             $this->syncService->syncAndFetchProjects($user);
         } catch (Exception $e) {
-            Log::error("Lỗi đồng bộ dự án trực tiếp khi Login: " . $e->getMessage());
+            Log::error("Lỗi đồng bộ dự án trực tiếp khi Login (Vẫn cho phép login tiếp tục): " . $e->getMessage());
         }
 
-        return [
+        $responseData = [
             'token' => $token,
             'display_name' => $userData['displayName'] ?? $userData['name'] ?? 'unknown',
             'super_admin' => $user->super_admin ?? 0,
         ];
+
+        unset($userData, $user, $token);
+
+        return $responseData;
     }
 
     protected function handleSuperAdmin(AuthDTO $dto): array
@@ -76,7 +80,7 @@ class AuthService
         return [
             'token' => $token,
             'display_name' => $user->jira_display_name ?? 'Super Admin',
-            'super_admin' => $user->super_admin ?? 0,
+            'super_admin' => $user->super_admin ?? 1,
         ];
     }
 }

@@ -7,6 +7,7 @@ use App\Repositories\Eloquent\IssueOverdueRepository;
 use App\Repositories\Eloquent\ManagerRepository;
 use App\Repositories\Eloquent\MilestoneRepository;
 use App\Repositories\Eloquent\ProjectRepository;
+use App\Repositories\Eloquent\RoleRepository;
 use App\Repositories\Eloquent\SyncIssueRepository;
 use App\Repositories\Eloquent\USBudgetRepository;
 use App\Repositories\Eloquent\UserRepository;
@@ -15,6 +16,7 @@ use App\Repositories\Interfaces\IssueOverdueInterface;
 use App\Repositories\Interfaces\ManagerInterface;
 use App\Repositories\Interfaces\MilestoneInterface;
 use App\Repositories\Interfaces\ProjectInterface;
+use App\Repositories\Interfaces\RoleInterface;
 use App\Repositories\Interfaces\SyncIssueInterface;
 use App\Repositories\Interfaces\USBudgetInterface;
 use App\Repositories\Interfaces\UserInterface;
@@ -35,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(USBudgetInterface::class, USBudgetRepository::class);
         $this->app->bind(ManagerInterface::class, ManagerRepository::class);
         $this->app->bind(MilestoneInterface::class, MilestoneRepository::class);
+        $this->app->bind(RoleInterface::class, RoleRepository::class);
     }
 
     /**

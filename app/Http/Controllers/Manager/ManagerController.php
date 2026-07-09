@@ -10,7 +10,9 @@ use Illuminate\Http\JsonResponse;
 
 class ManagerController extends Controller
 {
-    public function __construct(protected ManagerService $managerService) {}
+    public function __construct(protected ManagerService $managerService)
+    {
+    }
 
     public function getListUsers(ManagerRequest $request): JsonResponse
     {
@@ -20,7 +22,7 @@ class ManagerController extends Controller
 
         return response()->json($result);
     }
-    
+
     public function updateUser(ManagerRequest $request): JsonResponse
     {
         $dto = ManagerDTO::fromArray($request->validated());

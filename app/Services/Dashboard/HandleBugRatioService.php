@@ -10,7 +10,8 @@ class HandleBugRatioService
     {
         return $issues->filter(fn($issue) => $issue['issuetype'] === 'Bug' && !empty($issue['causer']))
             ->groupBy(function ($issue) {
-                $period = Carbon::parse($issue['created'])->format('m-Y');
+                $dateRaw = $issue['created'] ?? $issue['created_at'] ?? $issue['created_at_jira'] ?? now();
+                $period = Carbon::parse($dateRaw)->format('m-Y');
                 return $period . '|' . $issue['causer'];
             })
             ->map(function ($group, $key) {
@@ -27,13 +28,16 @@ class HandleBugRatioService
     public function countSubTask($issues)
     {
         return $issues->filter(function ($issue) {
+            $hasEndDate = !empty($issue['enddate']) || !empty($issue['end_date_jira']);
+
             return $issue['issuetype'] === 'Sub-task'
                 && $issue['status'] === 'Done'
                 && !empty($issue['assignee'])
-                && !empty($issue['enddate']);
+                && $hasEndDate;
         })
             ->groupBy(function ($issue) {
-                $period = Carbon::parse($issue['enddate'])->format('m-Y');
+                $dateRaw = $issue['enddate'] ?? $issue['end_date_jira'] ?? now();
+                $period = Carbon::parse($dateRaw)->format('m-Y');
                 return $period . '|' . $issue['assignee'];
             })
             ->map(function ($group, $key) {
@@ -58,15 +62,21 @@ class HandleBugRatioService
             "COD_Sửa lỗi gây ra lỗi mới"
         ];
 
-        return $issues->filter(function ($issue) use ($validCategories) {
-            return $issue['issuetype'] === 'Bug'
-                && !empty($issue['causer'])
-                && !empty($issue['causer_category'])
-                && !in_array($issue['causer_category'], $validCategories);
-        })
+        $filtered = $issues->filter(function ($issue) use ($validCategories) {
+            $isBug = $issue['issuetype'] === 'Bug';
+            $hasCauser = !empty($issue['causer']);
+            $hasCategory = !empty($issue['causer_category'] ?? $issue['causer_category_jira'] ?? null); // Đề phòng lệch tên key
+
+            $categoryValue = $issue['causer_category'] ?? null;
+            $isNotValid = !in_array($categoryValue, $validCategories);
+
+            return $isBug && $hasCauser && $hasCategory && $isNotValid;
+        });
+
+        return $filtered
             ->groupBy(function ($issue) {
-                $period = Carbon::parse($issue['created'])->format('m-Y');
-                return $period . '|' . $issue['causer'];
+                $dateRaw = $issue['created'] ?? $issue['created_at'] ?? $issue['created_at_jira'] ?? now();
+                return Carbon::parse($dateRaw)->format('m-Y') . '|' . $issue['causer'];
             })
             ->map(function ($group, $key) {
                 [$period, $causer] = explode('|', $key);
