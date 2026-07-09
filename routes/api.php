@@ -16,7 +16,7 @@ Route::prefix('auth')->group(function () {
 Route::middleware('auth:api')->group(function () {
     Route::middleware('isSuperAdmin')->prefix('admin')->group(function () {
         Route::get('manager', [ManagerController::class, 'getListUsers'])->name('admin.manager');
-        Route::put('manager/user', [ManagerController::class, 'updateUser'])->name('admin.users.update');
+        Route::post('manager/user', [ManagerController::class, 'updateUser'])->name('admin.users.update');
     });
     Route::middleware('isUser')->prefix('issues')->group(function () {
         Route::prefix('sync')->group(function () {
