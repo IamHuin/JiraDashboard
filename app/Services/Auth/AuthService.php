@@ -3,6 +3,7 @@
 namespace App\Services\Auth;
 
 use App\DTO\Auth\AuthDTO;
+use App\Models\Role;
 use App\Repositories\Interfaces\UserInterface;
 use App\Services\Ping\ConnectJiraService;
 use App\Services\Sync\SyncIssueService;
@@ -58,7 +59,6 @@ class AuthService
             'super_admin' => $user->super_admin ?? 0,
         ];
 
-        // Dọn dẹp bộ nhớ giải phóng RAM
         unset($userData, $user, $token);
 
         return $responseData;
@@ -80,7 +80,7 @@ class AuthService
         return [
             'token' => $token,
             'display_name' => $user->jira_display_name ?? 'Super Admin',
-            'super_admin' => $user->super_admin ?? 0,
+            'super_admin' => $user->super_admin ?? 1,
         ];
     }
 }

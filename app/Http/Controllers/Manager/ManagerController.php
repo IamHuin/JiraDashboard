@@ -23,11 +23,11 @@ class ManagerController extends Controller
         return response()->json($result);
     }
 
-    public function updateUser(ManagerRequest $request, $id): JsonResponse
+    public function updateUser(ManagerRequest $request): JsonResponse
     {
         $dto = ManagerDTO::fromArray($request->validated());
 
-        $result = $this->managerService->updateUser($dto, $id);
+        $result = $this->managerService->updateUser($dto);
 
         return response()->json($result);
     }

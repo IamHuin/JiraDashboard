@@ -28,9 +28,9 @@ class ManagerService
         ];
     }
 
-    public function updateUser(ManagerDTO $dto, $id): array
+    public function updateUser(ManagerDTO $dto): array
     {
-        $data = $this->managerRepo->updateUser($dto, $id);
+        $data = $this->managerRepo->updateUser($dto);
 
         if (empty($data)) {
             return [

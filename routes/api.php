@@ -16,14 +16,7 @@ Route::prefix('auth')->group(function () {
 Route::middleware('auth:api')->group(function () {
     Route::middleware('isSuperAdmin')->prefix('admin')->group(function () {
         Route::get('manager', [ManagerController::class, 'getListUsers'])->name('admin.manager');
-        Route::put('manager/user/{id}', [ManagerController::class, 'updateUser'])->name('admin.users.update');
-        Route::prefix('role')->group(function () {
-            Route::get('list', [RoleController::class, 'getListRoles'])->name('role.list');
-            Route::post('create', [RoleController::class, 'createRole'])->name('role.create');
-            Route::get('detail/{id}', [RoleController::class, 'getDetailRole'])->name('role.detail');
-            Route::put('update/{id}', [RoleController::class, 'updateRole'])->name('role.update');
-            Route::delete('delete/{id}', [RoleController::class, 'deleteRole'])->name('role.delete');
-        });
+        Route::put('manager/user', [ManagerController::class, 'updateUser'])->name('admin.users.update');
     });
     Route::middleware('isUser')->prefix('issues')->group(function () {
         Route::prefix('sync')->group(function () {

@@ -15,11 +15,10 @@ return new class extends Migration
             $table->id();
             $table->string('jira_username')->unique();
             $table->string('jira_password');
-//            $table->foreignId('role_id')->constrained('roles');
             $table->json('jira_projects_json')->nullable();
-            $table->json('jira_projects_role_json')->nullable();
             $table->string('jira_display_name')->nullable();
             $table->tinyInteger('super_admin')->default(0)->comment('0: Không phải Super admin, 1: Super admin');
+            $table->tinyInteger('is_admin')->default(0)->comment('0: Không phải admin, 1: admin');
             $table->timestamps();
         });
     }
