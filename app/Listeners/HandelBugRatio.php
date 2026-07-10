@@ -38,13 +38,14 @@ class HandelBugRatio
             );
 
             $bugRatios[] = [
+                'period'             => $bugRatio['period'],
                 'project_name'       => $userIssue['projectName'] ?? null,
                 'user_name'          => $userName,
+                'display_name'       => $userIssue['displayName'] ?? null,
                 'bug_count'          => $bugRatio['total_bugs'],
                 'bug_count_missing'  => $bugRatio['total_bugs_missing'],
                 'bug_percent'        => $bugRatio['bug_percent'],
                 'subtask_count'      => $bugRatio['total_subtasks'],
-                'period'             => $bugRatio['period'],
             ];
         }
 

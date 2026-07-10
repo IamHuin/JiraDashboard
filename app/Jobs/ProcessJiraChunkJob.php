@@ -3,18 +3,18 @@
 namespace App\Jobs;
 
 use App\Models\User;
-use App\Services\Sync\IssueTransformerService;
-use App\Repositories\Interfaces\SyncIssueInterface;
 use App\Repositories\Interfaces\IssueOverdueInterface;
+use App\Repositories\Interfaces\SyncIssueInterface;
 use App\Services\Ping\ConnectJiraService;
+use App\Services\Sync\IssueTransformerService;
+use Carbon\Carbon;
+use Exception;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Carbon\Carbon;
-use Exception;
 use Illuminate\Support\Facades\Crypt;
 use Log;
 
@@ -37,14 +37,14 @@ class ProcessJiraChunkJob implements ShouldQueue
     }
 
     public function handle(
-        SyncIssueInterface $syncRepo,
-        IssueOverdueInterface $issueOverdueRepo
+        SyncIssueInterface $syncRepo
     ): void {
         if ($this->batch()?->cancelled()) {
             return;
         }
 
         $transformer = app(IssueTransformerService::class);
+        $issueOverdueRepo = app(IssueOverdueInterface::class);
 
         try {
             if ($this->url && $this->user) {
@@ -86,7 +86,7 @@ class ProcessJiraChunkJob implements ShouldQueue
         }
     }
 
-    protected function processOverdue(array $issues, $issueOverdueRepo, IssueTransformerService $transformer): void
+    protected function processOverdue(array $issues, IssueOverdueInterface $issueOverdueRepo, IssueTransformerService $transformer): void
     {
         $targetTypes = ['Sub-task', 'Story', 'Milestone'];
         $bulkOverdueData = [];
@@ -108,6 +108,7 @@ class ProcessJiraChunkJob implements ShouldQueue
                     'summary'      => $issueData['fields']['summary'] ?? null,
                     'issuetype'    => $issueType,
                     'assignee'     => $detailData['assignee'] ?? null,
+                    'display_name' => $detailData['displayName'] ?? null,
                     'enddate'      => $detailData['enddate'] ?? null,
                     'status'       => $detailData['status'] ?? null,
                     'statusText'   => $detailData['statusText'] ?? null,

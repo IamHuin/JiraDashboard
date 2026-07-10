@@ -6,7 +6,6 @@ use App\Events\IssuesSync;
 use App\Repositories\Interfaces\SyncIssueInterface;
 use App\Services\Dashboard\HandleSlsxUlnlRatioService;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log;
 
 class HandelSlsxUlnlRatio
 {
@@ -27,16 +26,16 @@ class HandelSlsxUlnlRatio
      */
     public function handle(IssuesSync $event): void
     {
-        $slsxUlnlRatios = [];
+        $slsxUser = [];
 
         $issuesByPeriod = $event->issues->groupBy(function ($issue) {
             return Carbon::parse($issue['enddate'])->format('m-Y');
         });
 
         foreach ($issuesByPeriod as $period => $periodIssues) {
-            $slsxUlnlPercent = $this->handelSlsxUlnlService->slsxUlnlPercent($periodIssues);
+            $slsxSum = $this->handelSlsxUlnlService->slsxSum($periodIssues);
 
-            foreach ($slsxUlnlPercent as $item) {
+            foreach ($slsxSum as $item) {
                 $userName = $item['username'];
 
                 $userIssues = $periodIssues->filter(function ($issue) use ($userName) {
@@ -44,19 +43,21 @@ class HandelSlsxUlnlRatio
                         && ($issue['assignee'] ?? null) === $userName;
                 });
 
-                $slsxUlnlRatios[] = [
-                    'project_name' => $userIssues->first()['projectName'] ?? null,
-                    'user_name' => $userName,
-                    'slsx_sum' => $item['slsx_sum'],
-                    'ulnl_sum' => $item['ulnl_sum'],
-                    'slsx_vs_ulnl_ratio' => $item['slsx_vs_ulnl_ratio'],
+                $projectName = $userIssues->first()['projectName'] ?? null;
+
+                $slsxUser[] = [
                     'period' => $period,
+                    'project_name' => $projectName,
+                    'user_name' => $userName,
+                    'display_name' => $item['display_name'],
+                    'slsx_sum' => $item['slsx_sum'],
                 ];
             }
         }
 
-        if (!empty($slsxUlnlRatios)) {
-            $this->syncRepo->saveSlsxUlnlRatios($slsxUlnlRatios);
+        if (!empty($slsxUser)) {
+            $this->syncRepo->saveSlsxRatios($slsxUser);
+            $exist = $this->handelSlsxUlnlService->nltcExist();
         }
     }
 }

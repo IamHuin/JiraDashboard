@@ -9,12 +9,9 @@ use App\Http\Requests\Milestone\MilestoneRequest;
 use App\Http\Requests\NLTC\ImportRequest;
 use App\Http\Requests\Overdue\OverdueRequest;
 use App\Services\Dashboard\DashboardService;
-use App\Services\JiraNltcService;
-use Carbon\Carbon;
+use App\Services\NLTC\JiraNltcService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class DashboardController extends Controller
 {

@@ -18,6 +18,7 @@ return new class extends Migration {
             $table->string('summary')->nullable()->comment('Tiêu đề/tóm tắt issue trên Jira');
             $table->string('issuetype')->nullable()->comment('Loại issue: Bug hoặc Sub-task');
             $table->string('assignee')->nullable()->comment('Người được assign xử lý issue');
+            $table->string('display_name')->nullable()->comment('Tên hiển thị');
             $table->string('causer')->nullable()->comment('Người gây ra lỗi');
             $table->string('causer_category')->nullable()->comment('Loại gây ra lỗi');
             $table->string('ulnl')->nullable()->comment('Ước lượng nỗ lực');

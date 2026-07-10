@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\NLTC;
 
 use App\Repositories\Interfaces\JiraNltcInterface;
 use Carbon\Carbon;
@@ -128,8 +128,8 @@ class JiraNltcService
 
             $uniqueData[] = [
                 'period' => $period,
-                'project' => trim((string)($row[$columnIndexes['Dự án']] ?? '')),
-                'username' => $username,
+                'project_name' => trim((string)($row[$columnIndexes['Dự án']] ?? '')),
+                'user_name' => $username,
                 'display_name' => trim((string)($row[$columnIndexes['Tên']] ?? '')),
                 'role' => trim((string)($row[$columnIndexes['Role']] ?? '')),
                 'level' => strtoupper(trim((string)($row[$columnIndexes['Level']] ?? ''))),

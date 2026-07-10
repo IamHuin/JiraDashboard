@@ -12,5 +12,5 @@ interface SyncIssueInterface
 
     public function saveBugRatios(array $bugRatios);
     
-    public function saveSlsxUlnlRatios(array $slsxUlnlRatios);
+    public function saveSlsxRatios(array $slsxRatios);
 }

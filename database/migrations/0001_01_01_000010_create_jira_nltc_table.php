@@ -15,14 +15,14 @@ return new class extends Migration
             $table->id();
             
             $table->string('period', 20)->comment('Tháng thống kê');
-            $table->string('project', 150)->comment('Dự án');
-            $table->string('username', 100)->comment('Username');
+            $table->string('project_name', 150)->comment('Dự án');
+            $table->string('user_name', 100)->comment('Username');
             $table->string('display_name', 150)->comment('Tên');
             $table->string('role', 100)->comment('Role');
             $table->string('level', 50)->comment('Level');
             $table->string('standard', 100)->comment('Ra Tiêu chuẩn');
             
-            $table->unique(['period', 'project', 'username', 'display_name', 'role', 'level', 'standard'], 'uk_jira_nltc_all');
+            $table->unique(['period', 'project_name', 'user_name', 'display_name', 'role', 'level', 'standard'], 'uk_jira_nltc_all');
             
             $table->timestamps();
         });

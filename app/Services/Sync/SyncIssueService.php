@@ -45,7 +45,7 @@ class SyncIssueService extends ConnectJiraService
 
         $maxResults = 50;
 
-        $fieldsParam = "&fields=project,summary,issuetype,assignee,customfield_11321,customfield_11323,customfield_11306,status,created,customfield_10108,customfield_10115,subtasks&expand=changelog";
+        $fieldsParam = "&fields=project,summary,issuetype,assignee,customfield_11321,customfield_11306,status,created,customfield_10108,customfield_10115,subtasks&expand=changelog";
 
         // Tạo URL cho đợt check đầu tiên nhằm lấy "total" số lượng bản ghi
         $firstUrl = "/rest/api/2/search?jql=" . urlencode($jql) . "&startAt=0&maxResults={$maxResults}" . $fieldsParam;

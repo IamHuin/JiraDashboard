@@ -11,21 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('jira_bug_ratios', function (Blueprint $table) {
+        Schema::create('jira_slsx_ratios', function (Blueprint $table) {
             $table->id();
 
             $table->string('period')->comment('Tháng/năm thống kê dạng chuỗi m-Y');
             $table->string('project_name')->default('')->comment('Tên dự án trên Jira');
             $table->string('user_name')->comment('Tên người dùng: causer hoặc assignee');
             $table->string('display_name')->nullable()->comment('Tên hiển thị');
-            $table->integer('subtask_count')->default(0)->comment('Tổng Sub-task');
-            $table->integer('bug_count')->default(0)->comment('Tổng Bug');
-            $table->integer('bug_count_missing')->default(0)->comment('Tổng Bug do thiếu thừa tài liệu');
-            $table->integer('bug_percent')->default(0)->comment('Tỷ lệ % Bug');
+            $table->decimal('slsx_sum', 10, 3)->default(0)->comment('Tổng SLSX');
+            $table->string('standard', 100)->comment('Ra Tiêu chuẩn');
+            $table->integer('slsx_nltc_ratio')->default(0)->comment('Tỷ lệ % SLSX so với NLTC');
 
             $table->index(['period', 'project_name'], 'idx_period_project');
 
-            $table->unique(['user_name', 'period', 'project_name'], 'uk_user_period_project');
+            $table->unique(['user_name', 'period', 'project_name'], 'uk_user_period_project_slsx');
 
             $table->timestamps();
         });
@@ -36,6 +35,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('jira_bug_ratios');
+        Schema::dropIfExists('jira_slsx_ratios');
     }
 };

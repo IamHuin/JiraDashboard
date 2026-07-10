@@ -14,7 +14,7 @@ class JiraNltcRepository implements JiraNltcInterface
     {
         return DB::table('jira_nltc')->upsert(
             $data, 
-            ['period', 'project', 'username', 'display_name', 'role', 'level', 'standard']
+            ['period', 'project_name', 'user_name', 'display_name', 'role', 'level', 'standard']
         );
     }
 }

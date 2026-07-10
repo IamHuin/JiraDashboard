@@ -48,14 +48,14 @@ class USBudgetRepository implements USBudgetInterface
             ->upsert(
                 $multipleData,
                 ['key'],
-                ['period', 'project_name', 'summary', 'issuetype', 'assignee', 'slsx', 'sumSLSXSubTask', 'ratioSLSX', 'status', 'updated_at']
+                ['period', 'project_name', 'summary', 'issuetype', 'assignee', 'display_name', 'slsx', 'sumSLSXSubTask', 'ratioSLSX', 'status', 'updated_at']
             );
     }
 
     public function getUSBudget(string $period, ?string $username, ?array $projectNames = [], ?int $perPage = null): LengthAwarePaginator
     {
         $query = DB::table('jira_usbudgets')->select([
-            'id', 'key', 'summary', 'issuetype', 'assignee', 'status', 'slsx', 'sumSLSXSubTask', 'ratioSLSX'
+            'id', 'key', 'summary', 'issuetype', 'assignee', 'display_name', 'status', 'slsx', 'sumSLSXSubTask', 'ratioSLSX'
         ]);
 
         if ($period) {
@@ -69,7 +69,8 @@ class USBudgetRepository implements USBudgetInterface
         }
 
         if (!empty($username)) {
-            $query->where('assignee', 'like', "%{$username}%");
+            $query->where('assignee', 'like', "%{$username}%")
+                ->orWhere('display_name', 'like', "%{$username}%");
         }
 
         return $query->orderBy('ratioSLSX', 'desc')->paginate($perPage);

@@ -101,6 +101,7 @@ class ProcessMilestonesJob implements ShouldQueue
                 'summary'     => $issue->summary,
                 'issuetype'   => $issue->issuetype,
                 'assignee'    => $issue->assignee,
+                'displayName' => $issue->display_name,
                 'causer'      => $issue->causer,
                 'causer_category' => $issue->causer_category,
                 'ulnl'        => $issue->ulnl,

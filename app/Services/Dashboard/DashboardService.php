@@ -298,7 +298,7 @@ class DashboardService
 
         $slsxData = DB::table('jira_issues')
             ->whereIn('key', $allKeys)
-            ->select('key', 'slsx', 'summary', 'issuetype', 'status', 'assignee')
+            ->select('key', 'slsx', 'summary', 'issuetype', 'status', 'assignee', 'display_name')
             ->get()
             ->keyBy('key')
             ->toArray();
@@ -323,6 +323,7 @@ class DashboardService
                     'issuetype' => $slsxData[$storyKey]->issuetype ?? '',
                     'status' => $slsxData[$storyKey]->status,
                     'assignee' => $slsxData[$storyKey]->assignee ?? '',
+                    'display_name' => $slsxData[$storyKey]->display_name ?? '',
                     'slsx' => $slsxStory,
                     'sumSLSXSubTask' => round($sumSLSXSubTask, 3),
                     'ratioSLSX' => $ratioSLSX
