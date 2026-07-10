@@ -13,6 +13,7 @@ class MilestoneRequest extends FormRequest
             'project_names.*' => ['string'],
             'period' => ['required', 'date_format:m-Y'],
             'report_type' => ['required', 'string'],
+            'ticket_code' => ['nullable', 'string'],
         ];
     }
 
@@ -24,7 +25,8 @@ class MilestoneRequest extends FormRequest
             'project_names.array' => 'Project names phải là một mảng.',
             'project_names.*.string' => 'Mỗi project name phải là chuỗi ký tự.',
             'report_type.required' => 'Report Type là bắt buộc.',
-            'report_type.string' => 'Report Type phải là một chuỗi ký tự'
+            'report_type.string' => 'Report Type phải là một chuỗi ký tự',
+            'ticket_code.string' => 'Ticket Code phải là một chuỗi ký tự'
         ];
     }
 }

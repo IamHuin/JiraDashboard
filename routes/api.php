@@ -40,6 +40,7 @@ Route::middleware('auth:api')->group(function () {
             Route::prefix('leaderboard')->group(function () {
                 Route::get('bug_ratio', [DashboardController::class, 'getBugRatioLeaderboard'])->name('leaderboard.bug_ratio');
                 Route::get('slsx_ulnl_ratio', [DashboardController::class, 'getSlsxUlnlRatioLeaderboard'])->name('leaderboard.slsx_ulnl_ratio');
+//                Route::post('import', [DashboardController::class, 'importSlsx'])->name('leaderboard.import.slsx');
             });
 
             Route::prefix('overdue')->group(function () {

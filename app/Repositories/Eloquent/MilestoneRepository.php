@@ -11,7 +11,7 @@ class MilestoneRepository implements MilestoneInterface
     /**
      * Lấy danh sách mốc lỗi phân trang theo style query động tường minh
      */
-    public function getMilestones(string $period, ?string $reportType = null, ?array $projectNames = [], int $perPage = 10): LengthAwarePaginator
+    public function getMilestones(string $period, ?string $reportType = null, ?string $ticket_code = null, ?array $projectNames = [], int $perPage = 10): LengthAwarePaginator
     {
         $query = DB::table('jira_milestones')
             ->select('id', 'ticket_code', 'report_type', 'milestone_name');
@@ -22,6 +22,11 @@ class MilestoneRepository implements MilestoneInterface
 
         if (!empty($reportType)) {
             $query->where('report_type', $reportType);
+        }
+
+        if (!empty($ticket_code)) {
+            $query->where('ticket_code', 'like', '%' . $ticket_code . '%')
+                ->orWhere('milestone_name', 'like', '%' . $ticket_code . '%');
         }
 
         if (!empty($projectNames)) {

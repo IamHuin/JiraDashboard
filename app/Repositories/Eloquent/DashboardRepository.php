@@ -54,7 +54,8 @@ class DashboardRepository implements DashboardInterface
             $query->whereIn('project_name', $projectNames);
         }
 
-        $query->orderBy('bug_percent', 'desc');
+        $query->orderBy('bug_count', 'desc')
+        ->orderBy('bug_percent', 'desc');
 
         return $query->paginate($perPage);
     }

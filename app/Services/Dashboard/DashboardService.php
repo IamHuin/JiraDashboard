@@ -256,7 +256,7 @@ class DashboardService
         return format_dashboard_success($username, $allowedProjectNames, $period, $issues);
     }
 
-    public function getMilestones(string $period, ?string $report_type, ?array $projectNames = []): array
+    public function getMilestones(string $period, ?string $report_type, ?string $ticket_code, ?array $projectNames = []): array
     {
         $user = auth()->user();
         if (!$user) return ['success' => false, 'data' => []];
@@ -271,7 +271,7 @@ class DashboardService
         if ($period) {
             $this->processUSBudget($period, $allowedProjectNames);
 
-            $paginator = $this->milestoneRepo->getMilestones($period, $report_type, $allowedProjectNames, $perPage);
+            $paginator = $this->milestoneRepo->getMilestones($period, $report_type, $ticket_code, $allowedProjectNames, $perPage);
             $issues = [
                 'details' => $this->paginationService->format($paginator)
             ];

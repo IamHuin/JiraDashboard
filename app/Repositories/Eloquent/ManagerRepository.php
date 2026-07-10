@@ -20,7 +20,8 @@ class ManagerRepository implements ManagerInterface
             })
 
             ->when($dto->user_name, function ($query, $userName) {
-                $query->where('jira_username', 'like', "%{$userName}%");
+                $query->where('jira_username', 'like', "%{$userName}%")
+                    ->orWhere('jira_display_name', 'like', "%{$userName}%");
             })
             ->orderBy('updated_at', 'desc');
         
