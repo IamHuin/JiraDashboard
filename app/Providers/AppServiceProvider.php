@@ -20,6 +20,8 @@ use App\Repositories\Interfaces\RoleInterface;
 use App\Repositories\Interfaces\SyncIssueInterface;
 use App\Repositories\Interfaces\USBudgetInterface;
 use App\Repositories\Interfaces\UserInterface;
+use App\Repositories\Interfaces\JiraNltcInterface;
+use App\Repositories\Eloquent\JiraNltcRepository;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -38,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ManagerInterface::class, ManagerRepository::class);
         $this->app->bind(MilestoneInterface::class, MilestoneRepository::class);
         $this->app->bind(RoleInterface::class, RoleRepository::class);
+        $this->app->bind(JiraNltcInterface::class, JiraNltcRepository::class);
     }
 
     /**
