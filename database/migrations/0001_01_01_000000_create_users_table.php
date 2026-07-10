@@ -20,6 +20,8 @@ return new class extends Migration
             $table->tinyInteger('super_admin')->default(0)->comment('0: Không phải Super admin, 1: Super admin');
             $table->tinyInteger('is_admin')->default(0)->comment('0: Không phải admin, 1: admin');
             $table->timestamps();
+
+            $table->index(['jira_username'], 'users_index');
         });
     }
 

@@ -3,23 +3,36 @@
 namespace App\Services\Manager;
 
 use App\DTO\Manager\ManagerDTO;
+use App\Enums\PaginateEnum;
 use App\Repositories\Interfaces\ManagerInterface;
+use App\Services\Cache\DashboardCacheService;
+use App\Services\Dashboard\PaginationService;
 
 class ManagerService
 {
-    public function __construct(protected ManagerInterface $managerRepo) {}
+    public function __construct(protected ManagerInterface $managerRepo, protected DashboardCacheService $cacheService, protected PaginationService $paginationService)
+    {
+    }
 
     public function getListUsers(ManagerDTO $dto): array
     {
-        $data = $this->managerRepo->getListUsers($dto);
+        $page = (int)request('page', PaginateEnum::DEFAULT_PAGE);
+        $perPage = (int)request('per_page', PaginateEnum::DEFAULT_PER_PAGE);
 
-        if (empty($data)) {
+        $paginator = $this->managerRepo->getListUsers($dto, $perPage);
+
+
+        if (empty($paginator)) {
             return [
                 'success' => false,
                 'message' => 'Không tìm thấy dữ liệu người dùng thành viên.',
-                'data'    => []
+                'data' => ['details' => ['list' => [], 'meta' => []]]
             ];
         }
+
+        $data = [
+            'details' => $this->paginationService->format($paginator)
+        ];
 
         return [
             'success' => true,

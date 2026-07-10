@@ -4,13 +4,14 @@ namespace App\Repositories\Eloquent;
 
 use App\DTO\Manager\ManagerDTO;
 use App\Repositories\Interfaces\ManagerInterface;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class ManagerRepository implements ManagerInterface
 {
-    public function getListUsers(ManagerDTO $dto)
+    public function getListUsers(ManagerDTO $dto, int $perPage = 10): LengthAwarePaginator
     {
-        return DB::table('users')
+        $query = DB::table('users')
             ->select('id', 'jira_username', 'jira_display_name', 'is_admin')
             ->where('super_admin', 0)
 
@@ -19,9 +20,11 @@ class ManagerRepository implements ManagerInterface
             })
 
             ->when($dto->user_name, function ($query, $userName) {
-                $query->where('jira_display_name', 'like', "%{$userName}%");
+                $query->where('jira_username', 'like', "%{$userName}%");
             })
-            ->get();
+            ->orderBy('updated_at', 'desc');
+        
+        return $query->paginate($perPage);
     }
 
     public function updateUser(ManagerDTO $dto)
