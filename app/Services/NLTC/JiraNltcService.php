@@ -3,6 +3,7 @@
 namespace App\Services\NLTC;
 
 use App\Repositories\Interfaces\JiraNltcInterface;
+use App\Services\Dashboard\HandleSlsxUlnlRatioService;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -55,7 +56,7 @@ class JiraNltcService
             }
 
             if (isset($row[7]) && str_contains(trim((string)$row[7]), 'Từ: ')) {
-                $period = Carbon::parse(str_replace('Từ: ', '', trim((string)$row[7])))->format('d-Y');
+                $period = Carbon::parse(str_replace('Từ: ', '', trim((string)$row[7])))->format('m-Y');
             }
         }
 
@@ -139,6 +140,11 @@ class JiraNltcService
 
         if (!empty($uniqueData)) {
             $this->nltcRepository->upsertData($uniqueData);
+
+            // Tính toán tỷ lệ SLSX / NLTC sau khi import NLTC thành công
+            $periods = array_unique(array_column($uniqueData, 'period'));
+            $ratioService = app(HandleSlsxUlnlRatioService::class);
+            $ratioService->calculateAndSaveRatios($periods);
         }
 
         return [

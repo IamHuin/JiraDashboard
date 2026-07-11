@@ -3,22 +3,20 @@
 namespace App\Listeners;
 
 use App\Events\IssuesSync;
-use App\Repositories\Interfaces\SyncIssueInterface;
 use App\Services\Dashboard\HandleSlsxUlnlRatioService;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class HandelSlsxUlnlRatio
 {
     protected $handelSlsxUlnlService;
-    protected $syncRepo;
 
     /**
      * Create the event listener.
      */
-    public function __construct(HandleSlsxUlnlRatioService $handelSlsxUlnlService, SyncIssueInterface $syncRepo)
+    public function __construct(HandleSlsxUlnlRatioService $handelSlsxUlnlService)
     {
         $this->handelSlsxUlnlService = $handelSlsxUlnlService;
-        $this->syncRepo = $syncRepo;
     }
 
     /**
@@ -43,21 +41,30 @@ class HandelSlsxUlnlRatio
                         && ($issue['assignee'] ?? null) === $userName;
                 });
 
-                $projectName = $userIssues->first()['projectName'] ?? null;
+                $firstIssue = $userIssues->first();
+                $projectName = $firstIssue ? ($firstIssue['projectName'] ?? null) : null;
 
                 $slsxUser[] = [
                     'period' => $period,
                     'project_name' => $projectName,
                     'user_name' => $userName,
-                    'display_name' => $item['display_name'],
+                    'display_name' => $item['display_name'] ?? $userName,
                     'slsx_sum' => $item['slsx_sum'],
                 ];
             }
         }
 
         if (!empty($slsxUser)) {
-            $this->syncRepo->saveSlsxRatios($slsxUser);
-            $exist = $this->handelSlsxUlnlService->nltcExist();
+            // Lưu dữ liệu sản lượng vào jira_slsx_users
+            DB::table('jira_slsx_users')->upsert(
+                $slsxUser, 
+                ['period', 'project_name', 'user_name'], 
+                ['display_name', 'slsx_sum']
+            );
+            
+            // Tính toán tỷ lệ và lưu vào jira_slsx_ratios
+            $periods = array_keys($issuesByPeriod->toArray());
+            $this->handelSlsxUlnlService->calculateAndSaveRatios($periods);
         }
     }
 }
