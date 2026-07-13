@@ -23,11 +23,17 @@ class SyncIssueJob implements ShouldQueue
 
     protected $userId;
     protected string $mode;
+    protected array $projectNames;
+    protected string $period_from;
+    protected string $period_to;
 
-    public function __construct($userId, string $mode = 'full')
+    public function __construct($userId, string $mode = 'full', array $projectNames = [], string $period_from = '', string $period_to = '')
     {
         $this->userId = $userId;
         $this->mode = $mode;
+        $this->projectNames = $projectNames;
+        $this->period_from = $period_from;
+        $this->period_to = $period_to;
         $this->onQueue('jira-sync');
     }
 
@@ -44,7 +50,7 @@ class SyncIssueJob implements ShouldQueue
             $user = User::findOrFail($this->userId);
 
             match ($this->mode) {
-                'full' => $service->syncFullIssues($user),
+                'full' => $service->syncFullIssues($user, $this->projectNames, $this->period_from, $this->period_to),
                 'last' => $service->syncFromLastIssues($user),
                 default => throw new \InvalidArgumentException("Unknown sync mode: {$this->mode}"),
             };
@@ -58,7 +64,7 @@ class SyncIssueJob implements ShouldQueue
 
     public function middleware(): array
     {
-        return [(new WithoutOverlapping("{$this->userId}-{$this->mode}"))->expireAfter(3600)];
+        return [(new WithoutOverlapping("{$this->userId}-{$this->mode}"))->expireAfter(3600)];//1800 = 30 phút
     }
 
     public function failed(\Throwable $exception)
