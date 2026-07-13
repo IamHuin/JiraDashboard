@@ -144,7 +144,7 @@ class JiraNltcService
             // Tính toán tỷ lệ SLSX / NLTC sau khi import NLTC thành công
             $periods = array_unique(array_column($uniqueData, 'period'));
             $ratioService = app(HandleSlsxUlnlRatioService::class);
-            $ratioService->calculateAndSaveRatios($periods);
+            $ratioService->calculateAndSaveRatios($periods, auth()->id());
         }
 
         return [

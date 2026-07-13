@@ -2,10 +2,15 @@
 
 namespace App\Services\Dashboard;
 
+use App\Services\Cache\DashboardCacheService;
 use Illuminate\Support\Facades\DB;
 
 class HandleSlsxUlnlRatioService
 {
+    public function __construct(protected DashboardCacheService $cacheService)
+    {
+
+    }
     public function slsxSum($issues)
     {
         return $issues
@@ -27,7 +32,7 @@ class HandleSlsxUlnlRatioService
      *
      * @param array $periods Danh sách các kỳ cần cập nhật (vd: ['07-2024'])
      */
-    public function calculateAndSaveRatios(array $periods)
+    public function calculateAndSaveRatios(array $periods, ?int $userId = null)
     {
         if (empty($periods)) {
             return;
@@ -63,6 +68,14 @@ class HandleSlsxUlnlRatioService
                 'standard' => $row->standard,
                 'slsx_nltc_ratio' => $ratio,
             ];
+        }
+        
+        $finalUserId = $userId ?? auth()->id();
+        if ($finalUserId) {
+            foreach ($periods as $period) {
+                $targetCacheKey = "user_{$finalUserId}_slsx_ulnl_ratio_leaderboard_{$period}";
+                $this->cacheService->findCacheKey($finalUserId, $targetCacheKey);
+            }
         }
 
         if (!empty($upsertData)) {

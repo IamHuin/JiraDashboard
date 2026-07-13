@@ -141,14 +141,14 @@ class IssueTransformerService
             ];
         }
 
-//        if ($logWorkDateDone) {
-//            if ($logWorkDateDone->greaterThan($endDate)) {
-//                $currentStatus = 'Overdue';
-//                $statusText = "Quá hạn " . $this->formatDetailedDuration($endDate, $logWorkDateDone);
-//            } else {
-//                $statusText = "Đúng thời hạn";
-//            }
-//        } else {
+        if ($logWorkDateDone) {
+            if ($logWorkDateDone->greaterThan($endDate)) {
+                $currentStatus = 'Overdue';
+                $statusText = "Quá hạn " . $this->formatDetailedDuration($endDate, $logWorkDateDone);
+            } else {
+                $statusText = "Đúng thời hạn";
+            }
+        } else {
             $now = Carbon::now('Asia/Ho_Chi_Minh');
             if ($now->greaterThan($endDate)) {
                 $currentStatus = 'Missing';
@@ -160,7 +160,7 @@ class IssueTransformerService
                 }
                 $statusText = "Hạn cuối ngày";
             }
-//        }
+        }
 
         return [
             'current_status' => $currentStatus,

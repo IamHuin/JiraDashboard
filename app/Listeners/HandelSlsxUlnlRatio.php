@@ -64,7 +64,7 @@ class HandelSlsxUlnlRatio
             
             // Tính toán tỷ lệ và lưu vào jira_slsx_ratios
             $periods = array_keys($issuesByPeriod->toArray());
-            $this->handelSlsxUlnlService->calculateAndSaveRatios($periods);
+            $this->handelSlsxUlnlService->calculateAndSaveRatios($periods, $event->syncingUser?->id);
         }
     }
 }

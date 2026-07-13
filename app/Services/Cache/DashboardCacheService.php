@@ -45,4 +45,23 @@ class DashboardCacheService
     {
         return $this->ttl;
     }
+
+    public function findCacheKey(int $userId, string $cacheKey): void
+    {
+        $registryKey = "user_{$userId}_cache_registry";
+        $trackedKeys = $this->getTrackedKeys($userId);
+        $remainingKeys = [];
+
+        foreach ($trackedKeys as $key) {
+            if (str_contains($key, $cacheKey)) {
+                Cache::forget($key);
+            } else {
+                $remainingKeys[] = $key;
+            }
+        }
+
+        if (count($trackedKeys) !== count($remainingKeys)) {
+            Cache::forever($registryKey, $remainingKeys);
+        }
+    }
 }
