@@ -39,7 +39,6 @@ php artisan db:seed --force
 
 php artisan route:cache
 php artisan view:cache
-php artisan cache:clear
 
 chown -R www-data:www-data storage bootstrap/cache
 chmod -R 775 storage bootstrap/cache
