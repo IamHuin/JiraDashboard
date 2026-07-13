@@ -19,10 +19,6 @@ class ManagerRepository implements ManagerInterface
                 $query->where('is_admin', $dto->is_admin);
             })
 
-            ->when($dto->user_name, function ($query, $userName) {
-                $query->where('jira_username', 'like', "%{$userName}%")
-                    ->orWhere('jira_display_name', 'like', "%{$userName}%");
-            })
             ->orderBy('updated_at', 'desc');
         
         return $query->paginate($perPage);
