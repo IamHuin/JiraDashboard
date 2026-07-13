@@ -56,7 +56,7 @@ class JiraNltcService
             }
 
             if (isset($row[7]) && str_contains(trim((string)$row[7]), 'Từ: ')) {
-                $period = Carbon::parse(str_replace('Từ: ', '', trim((string)$row[7])))->format('m-Y');
+                $period = Carbon::parse(str_replace('Từ: ', '', trim((string)$row[7])))->format('d-Y');
             }
         }
 
