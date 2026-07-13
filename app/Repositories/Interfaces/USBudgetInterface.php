@@ -10,5 +10,5 @@ interface USBudgetInterface
 
     public function upsertUSBudget(array $multipleData): void;
 
-    public function getUSBudget(string $period, ?string $username, ?array $projectNames = [], ?int $perPage = null): LengthAwarePaginator;
+    public function getUSBudget(string $period, ?array $projectNames = [], ?int $perPage = null): LengthAwarePaginator;
 }

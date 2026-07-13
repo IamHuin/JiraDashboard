@@ -40,7 +40,6 @@ class DashboardController extends Controller
         $dto = DashboardDTO::fromArray($request->validated());
         $result = $this->dashboardService->getBugRatioLeaderboard(
             $dto->period,
-            $dto->user_name,
             $dto->project_names
         );
 
@@ -52,7 +51,6 @@ class DashboardController extends Controller
         $dto = DashboardDTO::fromArray($request->validated());
         $result = $this->dashboardService->getSlsxUlnlRatioLeaderboard(
             $dto->period,
-            $dto->user_name,
             $dto->project_names
         );
 
@@ -92,7 +90,6 @@ class DashboardController extends Controller
         $result = $this->dashboardService->getOverdueIssues(
             $dto->table_id,
             $dto->period,
-            $dto->user_name,
             $dto->project_names,
             $dto->issuetype,
             $dto->status
@@ -106,7 +103,6 @@ class DashboardController extends Controller
         $result = $this->dashboardService->getOverdueLogWork(
             $dto->table_id,
             $dto->period,
-            $dto->user_name,
             $dto->project_names,
             $dto->issuetype,
             $dto->statusLogWork,
@@ -120,7 +116,6 @@ class DashboardController extends Controller
         $dto = DashboardDTO::fromArray($request->validated());
         $result = $this->dashboardService->getUSBudgets(
             $dto->period,
-            $dto->user_name,
             $dto->project_names
         );
 

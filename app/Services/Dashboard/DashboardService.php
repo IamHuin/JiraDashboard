@@ -69,7 +69,7 @@ class DashboardService
         ];
     }
 
-    public function getBugRatioLeaderboard(string $period, ?string $userName, ?array $projectNames = []): array
+    public function getBugRatioLeaderboard(string $period, ?array $projectNames = []): array
     {
         $user = auth()->user();
         if (!$user) return ['success' => false, 'data' => []];
@@ -80,17 +80,17 @@ class DashboardService
         $allowedProjectNames = $this->filterAllowedProjects($projectNames);
 
         if (empty($allowedProjectNames)) {
-            return format_dashboard_empty($userName, $period, $page, $perPage);
+            return format_dashboard_empty($period, $page, $perPage);
         }
 
         $projectHash = md5(json_encode($allowedProjectNames));
-        $cacheKey = "user_{$user->id}_bug_ratio_leaderboard_{$period}_{$userName}_{$projectHash}_p{$page}_s{$perPage}";
+        $cacheKey = "user_{$user->id}_bug_ratio_leaderboard_{$period}_{$projectHash}_p{$page}_s{$perPage}";
 
-        $issues = Cache::remember($cacheKey, $this->cacheService->getTtl(), function () use ($period, $allowedProjectNames, $userName, $user, $perPage, $cacheKey) {
+        $issues = Cache::remember($cacheKey, $this->cacheService->getTtl(), function () use ($period, $allowedProjectNames, $user, $perPage, $cacheKey) {
             $this->cacheService->trackKey($user->id, $cacheKey);
 
             if ($period) {
-                $paginator = $this->dashboardRepo->getBugRatioByPeriod($period, $allowedProjectNames, $userName, $perPage);
+                $paginator = $this->dashboardRepo->getBugRatioByPeriod($period, $allowedProjectNames, $perPage);
 
                 $data = [
                     'details' => $this->paginationService->format($paginator)
@@ -102,10 +102,10 @@ class DashboardService
             return ['details' => ['list' => [], 'meta' => []]];
         });
 
-        return format_dashboard_success($userName, $allowedProjectNames, $period, $issues);
+        return format_dashboard_success($allowedProjectNames, $period, $issues);
     }
 
-    public function getSlsxUlnlRatioLeaderboard(string $period, ?string $userName, ?array $projectNames = []): array
+    public function getSlsxUlnlRatioLeaderboard(string $period, ?array $projectNames = []): array
     {
         $user = auth()->user();
         if (!$user) return ['success' => false, 'data' => []];
@@ -116,17 +116,17 @@ class DashboardService
         $allowedProjectNames = $this->filterAllowedProjects($projectNames);
 
         if (empty($allowedProjectNames)) {
-            return format_dashboard_empty($userName, $period, $page, $perPage);
+            return format_dashboard_empty($period, $page, $perPage);
         }
 
         $projectHash = md5(json_encode($allowedProjectNames));
-        $cacheKey = "user_{$user->id}_slsx_ulnl_ratio_leaderboard_{$period}_{$userName}_{$projectHash}_p{$page}_s{$perPage}";
+        $cacheKey = "user_{$user->id}_slsx_ulnl_ratio_leaderboard_{$period}_{$projectHash}_p{$page}_s{$perPage}";
 
-        $issues = Cache::remember($cacheKey, $this->cacheService->getTtl(), function () use ($period, $allowedProjectNames, $userName, $user, $perPage, $cacheKey) {
+        $issues = Cache::remember($cacheKey, $this->cacheService->getTtl(), function () use ($period, $allowedProjectNames, $user, $perPage, $cacheKey) {
             $this->cacheService->trackKey($user->id, $cacheKey);
 
             if ($period) {
-                $paginator = $this->dashboardRepo->getSlsxUlnlRatioByPeriod($period, $allowedProjectNames, $userName, $perPage);
+                $paginator = $this->dashboardRepo->getSlsxUlnlRatioByPeriod($period, $allowedProjectNames, $perPage);
 
                 $data = [
                     'details' => $this->paginationService->format($paginator)
@@ -138,7 +138,7 @@ class DashboardService
             return ['details' => ['list' => [], 'meta' => []]];
         });
 
-        return format_dashboard_success($userName, $allowedProjectNames, $period, $issues);
+        return format_dashboard_success($allowedProjectNames, $period, $issues);
     }
 
     public function getProjects(): array
@@ -158,7 +158,7 @@ class DashboardService
         return ['success' => true, 'data' => $projects ?? []];
     }
 
-    public function getOverdueIssues(int $table_id,string $period, ?string $userName, ?array $projectNames = [], ?string $issuetype = null, ?string $status = null): array
+    public function getOverdueIssues(int $table_id,string $period, ?array $projectNames = [], ?string $issuetype = null, ?string $status = null): array
     {
         $user = auth()->user();
         if (!$user) return ['success' => false, 'data' => []];
@@ -169,17 +169,17 @@ class DashboardService
         $allowedProjectNames = $this->filterAllowedProjects($projectNames);
 
         if (empty($allowedProjectNames)) {
-            return format_dashboard_empty($userName, $period, $page, $perPage);
+            return format_dashboard_empty($period, $page, $perPage);
         }
 
         $projectHash = md5(json_encode($allowedProjectNames));
-        $cacheKey = "user_{$user->id}_overdues_{$table_id}_{$period}_{$userName}_{$issuetype}_{$status}_{$projectHash}_p{$page}_s{$perPage}";
+        $cacheKey = "user_{$user->id}_overdues_{$table_id}_{$period}_{$issuetype}_{$status}_{$projectHash}_p{$page}_s{$perPage}";
 
-        $issues = Cache::remember($cacheKey, $this->cacheService->getTtl(), function () use ($period, $allowedProjectNames, $userName, $issuetype, $status, $perPage, $user, $cacheKey) {
+        $issues = Cache::remember($cacheKey, $this->cacheService->getTtl(), function () use ($period, $allowedProjectNames, $issuetype, $status, $perPage, $user, $cacheKey) {
             $this->cacheService->trackKey($user->id, $cacheKey);
 
             if ($period) {
-                $paginator = $this->dashboardRepo->getOverdueIssues($period, $allowedProjectNames, $userName, $issuetype, $status, $perPage);
+                $paginator = $this->dashboardRepo->getOverdueIssues($period, $allowedProjectNames, $issuetype, $status, $perPage);
 
                 $data = [
                     'details' => $this->paginationService->format($paginator)
@@ -191,10 +191,10 @@ class DashboardService
             return ['details' => ['list' => [], 'meta' => []]];
         });
 
-        return format_dashboard_success($userName, $allowedProjectNames, $period, $issues);
+        return format_dashboard_success($allowedProjectNames, $period, $issues);
     }
 
-    public function getOverdueLogWork(int $table_id,string $period, ?string $userName, ?array $projectNames = [], ?string $issuetype = null, ?string $statusLogWork = null): array
+    public function getOverdueLogWork(int $table_id,string $period, ?array $projectNames = [], ?string $issuetype = null, ?string $statusLogWork = null): array
     {
         $user = auth()->user();
         if (!$user) return ['success' => false, 'data' => []];
@@ -205,17 +205,17 @@ class DashboardService
         $allowedProjectNames = $this->filterAllowedProjects($projectNames);
 
         if (empty($allowedProjectNames)) {
-            return format_dashboard_empty($userName, $period, $page, $perPage);
+            return format_dashboard_empty($period, $page, $perPage);
         }
 
         $projectHash = md5(json_encode($allowedProjectNames));
-        $cacheKey = "user_{$user->id}_overdues_{$table_id}_{$period}_{$userName}_{$issuetype}_{$statusLogWork}_{$projectHash}_p{$page}_s{$perPage}";
+        $cacheKey = "user_{$user->id}_overdues_{$table_id}_{$period}_{$issuetype}_{$statusLogWork}_{$projectHash}_p{$page}_s{$perPage}";
 
-        $issues = Cache::remember($cacheKey, $this->cacheService->getTtl(), function () use ($period, $allowedProjectNames, $userName, $issuetype, $statusLogWork, $perPage, $user, $cacheKey) {
+        $issues = Cache::remember($cacheKey, $this->cacheService->getTtl(), function () use ($period, $allowedProjectNames, $issuetype, $statusLogWork, $perPage, $user, $cacheKey) {
             $this->cacheService->trackKey($user->id, $cacheKey);
 
             if ($period) {
-                $paginator = $this->dashboardRepo->getOverdueLogWork($period, $allowedProjectNames, $userName, $issuetype, $statusLogWork, $perPage);
+                $paginator = $this->dashboardRepo->getOverdueLogWork($period, $allowedProjectNames, $issuetype, $statusLogWork, $perPage);
 
                 $data = [
                     'details' => $this->paginationService->format($paginator)
@@ -227,10 +227,10 @@ class DashboardService
             return ['details' => ['list' => [], 'meta' => []]];
         });
 
-        return format_dashboard_success($userName, $allowedProjectNames, $period, $issues);
+        return format_dashboard_success($allowedProjectNames, $period, $issues);
     }
 
-    public function getUSBudgets(string $period, ?string $username, ?array $projectNames = []): array
+    public function getUSBudgets(string $period, ?array $projectNames = []): array
     {
         $user = auth()->user();
         if (!$user) return ['success' => false, 'data' => []];
@@ -245,7 +245,7 @@ class DashboardService
         if ($period) {
             $this->processUSBudget($period, $allowedProjectNames);
 
-            $paginator = $this->usbudgetRepo->getUSBudget($period, $username, $allowedProjectNames, $perPage);
+            $paginator = $this->usbudgetRepo->getUSBudget($period, $allowedProjectNames, $perPage);
             $issues = [
                 'details' => $this->paginationService->format($paginator)
             ];
@@ -253,7 +253,7 @@ class DashboardService
             $issues = ['details' => ['list' => [], 'meta' => []]];
         }
 
-        return format_dashboard_success($username, $allowedProjectNames, $period, $issues);
+        return format_dashboard_success($allowedProjectNames, $period, $issues);
     }
 
     public function getMilestones(string $period, ?string $report_type, ?string $ticket_code, ?array $projectNames = []): array
@@ -279,7 +279,7 @@ class DashboardService
             $issues = ['details' => ['list' => [], 'meta' => []]];
         }
 
-        return format_dashboard_success($user->jira_display_name, $allowedProjectNames, $period, $issues);
+        return format_dashboard_success($allowedProjectNames, $period, $issues);
     }
 
     public function processUSBudget(string $period, ?array $projectNames = []): void

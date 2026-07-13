@@ -52,7 +52,7 @@ class USBudgetRepository implements USBudgetInterface
             );
     }
 
-    public function getUSBudget(string $period, ?string $username, ?array $projectNames = [], ?int $perPage = null): LengthAwarePaginator
+    public function getUSBudget(string $period, ?array $projectNames = [], ?int $perPage = null): LengthAwarePaginator
     {
         $query = DB::table('jira_usbudgets')->select([
             'id', 'key', 'summary', 'issuetype', 'assignee', 'display_name', 'status', 'slsx', 'sumSLSXSubTask', 'ratioSLSX'
@@ -67,14 +67,6 @@ class USBudgetRepository implements USBudgetInterface
                 $q->whereRaw("JSON_OVERLAPS(project_name, ?)", [json_encode($projectNames)]);
             });
         }
-
-        if (!empty($userName)) {
-            $query->where(function ($q) use ($userName) {
-                $q->where('assignee', 'like', "%{$userName}%")
-                    ->orWhere('display_name', 'like', "%{$userName}%");
-            });
-        }
-
 
         return $query->orderBy('ratioSLSX', 'desc')->paginate($perPage);
     }

@@ -37,20 +37,13 @@ class DashboardRepository implements DashboardInterface
         ];
     }
 
-    public function getBugRatioByPeriod(string $period, ?array $projectNames = [], ?string $userName = null, ?int $perPage = null): LengthAwarePaginator
+    public function getBugRatioByPeriod(string $period, ?array $projectNames = [], ?int $perPage = null): LengthAwarePaginator
     {
         $query = DB::table('jira_bug_ratios')
             ->select('id', 'user_name', 'display_name', 'subtask_count', 'bug_count', 'bug_count_missing', 'bug_percent');
 
         if ($period) {
             $query->where('period', $period);
-        }
-
-        if (!empty($userName)) {
-            $query->where(function ($q) use ($userName) {
-                $q->where('user_name', 'like', "%{$userName}%")
-                    ->orWhere('display_name', 'like', "%{$userName}%");
-            });
         }
 
         if (!empty($projectNames)) {
@@ -63,20 +56,13 @@ class DashboardRepository implements DashboardInterface
         return $query->paginate($perPage);
     }
 
-    public function getSlsxUlnlRatioByPeriod(string $period, ?array $projectNames = [], ?string $userName = null, ?int $perPage = null): LengthAwarePaginator
+    public function getSlsxUlnlRatioByPeriod(string $period, ?array $projectNames = [], ?int $perPage = null): LengthAwarePaginator
     {
         $query = DB::table('jira_slsx_ratios')
             ->select('id', 'user_name', 'display_name', 'slsx_sum', 'standard', 'slsx_nltc_ratio');
 
         if ($period) {
             $query->where('period', $period);
-        }
-
-        if (!empty($userName)) {
-            $query->where(function ($q) use ($userName) {
-                $q->where('user_name', 'like', "%{$userName}%")
-                    ->orWhere('display_name', 'like', "%{$userName}%");
-            });
         }
 
         if (!empty($projectNames)) {
@@ -88,7 +74,7 @@ class DashboardRepository implements DashboardInterface
         return $query->paginate($perPage);
     }
 
-    public function getOverdueIssues(string $period, ?array $projectNames = [], ?string $username = null, ?string $issueType = null, ?string $status = null, int $perPage = 10): LengthAwarePaginator
+    public function getOverdueIssues(string $period, ?array $projectNames = [], ?string $issueType = null, ?string $status = null, int $perPage = 10): LengthAwarePaginator
     {
         $query = DB::table('jira_overdues')
             ->select('id', 'key', 'summary', 'issuetype', 'assignee', 'display_name', 'status', 'statusText', 'enddate');
@@ -109,18 +95,11 @@ class DashboardRepository implements DashboardInterface
             $query->where('status', $status);
         }
 
-        if (!empty($username)) {
-            $query->where(function ($q) use ($username) {
-                $q->where('assignee', 'like', "%{$username}%")
-                    ->orWhere('display_name', 'like', "%{$username}%");
-            });
-        }
-
         $query->orderBy('enddate', 'desc');
         return $query->paginate($perPage);
     }
 
-    public function getOverdueLogWork(string $period, ?array $projectNames = [], ?string $username = null, ?string $issueType = null, ?string $statusLogWork = null, int $perPage = 10): LengthAwarePaginator
+    public function getOverdueLogWork(string $period, ?array $projectNames = [], ?string $issueType = null, ?string $statusLogWork = null, int $perPage = 10): LengthAwarePaginator
     {
         $query = DB::table('jira_overdues')
             ->select('id', 'key', 'summary', 'issuetype', 'assignee', 'display_name', 'statusLogWork as status', 'statusTextLogWork as statusText', 'enddate');
@@ -139,13 +118,6 @@ class DashboardRepository implements DashboardInterface
 
         if (!empty($statusLogWork)) {
             $query->where('statusLogWork', $statusLogWork);
-        }
-
-        if (!empty($username)) {
-            $query->where(function ($q) use ($username) {
-                $q->where('assignee', 'like', "%{$username}%")
-                    ->orWhere('display_name', 'like', "%{$username}%");
-            });
         }
 
         $query->orderBy('enddate', 'desc');
