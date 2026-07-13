@@ -111,12 +111,10 @@ class ProcessMilestonesJob implements ShouldQueue
                 'enddate'     => $issue->end_date_jira,
             ]);
 
-        if ($allSyncedIssues->isNotEmpty()) {
-            $eventInstance = new IssuesSync($allSyncedIssues);
-            $eventInstance->syncingUser = $this->user;
+        $eventInstance = new IssuesSync($allSyncedIssues);
+        $eventInstance->syncingUser = $this->user;
 
-            event($eventInstance);
-        }
+        event($eventInstance);
 
         Cache::put("jira-sync-status:{$this->user->id}:full", SyncStatus::DONE->value, now()->addMinutes(30));
         Cache::put("jira-sync-status:{$this->user->id}:last", SyncStatus::DONE->value, now()->addMinutes(30));
