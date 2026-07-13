@@ -19,6 +19,7 @@ return new class extends Migration {
             $table->text('summary')->comment('Tiêu đề / Nội dung tóm tắt của công việc');
             $table->string('issuetype', 50)->comment('Loại công việc (Sub-task, Story, Milestone, Bug...)');
             $table->string('assignee', 100)->nullable()->comment('Tên người được giao thực hiện công việc');
+            $table->string('display_name')->nullable()->comment('Tên hiển thị');
             $table->string('status', 50)->comment('Trạng thái công việc sau tính toán logic (Done, In Progress hoặc Overdue)');
             $table->string('slsx')->nullable()->comment('Sản lượng sản xuất của loại Story');
             $table->string('sumSLSXSubTask')->nullable()->comment('Tổng sản lượng sản xuất');

@@ -3,7 +3,6 @@
 namespace App\Services\Sync;
 
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log;
 
 class IssueTransformerService
 {
@@ -25,10 +24,11 @@ class IssueTransformerService
                 'projectName'     => $issue['fields']['project']['name'] ?? null,
                 'summary'         => $issue['fields']['summary'] ?? null,
                 'issuetype'       => $issue['fields']['issuetype']['name'] ?? null,
-                'assignee'        => $issue['fields']['assignee']['displayName'] ?? $issue['fields']['assignee']['name'] ?? null,
-                'causer'          => $issue['fields']['customfield_11321']['displayName'] ?? $issue['fields']['customfield_11321']['name'] ?? null,
+                'assignee' => $issue['fields']['assignee']['name'] ?? null,
+                'displayName' => $issue['fields']['assignee']['displayName'] ?? null,
+                'causer' => $issue['fields']['customfield_11321']['name'] ?? null,
+                'causer_displayName' => $issue['fields']['customfield_11321']['displayName'] ?? null,
                 'causer_category' => $issue['fields']['customfield_10115']['value'] ?? null,
-                'ulnl'            => $issue['fields']['customfield_11323'] ?? null,
                 'slsx'            => $issue['fields']['customfield_11306'] ?? null,
                 'status'          => $issue['fields']['status']['name'] ?? null,
                 'subtask_keys'    => $subtaskKeys,
@@ -70,7 +70,8 @@ class IssueTransformerService
             'statusLogWork' => isset($finalLogWork['current_status']) ? $finalLogWork['current_status'] : null,
             'statusTextLogWork' => isset($finalLogWork['status_text']) ? $finalLogWork['status_text'] : null,
             'issueType'  => $fields['issuetype']['name'] ?? null,
-            'assignee'   => $fields['assignee']['displayName'] ?? $fields['assignee']['name'] ?? null,
+            'assignee' => $fields['assignee']['name'] ?? null,
+            'displayName' => $fields['assignee']['displayName'] ?? null,
         ];
     }
 
@@ -140,14 +141,14 @@ class IssueTransformerService
             ];
         }
 
-        if ($logWorkDateDone) {
-            if ($logWorkDateDone->greaterThan($endDate)) {
-                $currentStatus = 'Overdue';
-                $statusText = "Quá hạn " . $this->formatDetailedDuration($endDate, $logWorkDateDone);
-            } else {
-                $statusText = "Đúng thời hạn";
-            }
-        } else {
+//        if ($logWorkDateDone) {
+//            if ($logWorkDateDone->greaterThan($endDate)) {
+//                $currentStatus = 'Overdue';
+//                $statusText = "Quá hạn " . $this->formatDetailedDuration($endDate, $logWorkDateDone);
+//            } else {
+//                $statusText = "Đúng thời hạn";
+//            }
+//        } else {
             $now = Carbon::now('Asia/Ho_Chi_Minh');
             if ($now->greaterThan($endDate)) {
                 $currentStatus = 'Missing';
@@ -159,7 +160,7 @@ class IssueTransformerService
                 }
                 $statusText = "Hạn cuối ngày";
             }
-        }
+//        }
 
         return [
             'current_status' => $currentStatus,

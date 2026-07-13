@@ -11,6 +11,7 @@ Route::prefix('auth')->group(function () {
     Route::get('logout', [AuthController::class, 'Logout'])->name('logout');
     Route::get('refresh', [AuthController::class, 'Refresh'])->name('refresh');
 });
+Route::post('import', [DashboardController::class, 'importSlsx'])->name('leaderboard.import.slsx');
 
 Route::middleware('auth:api')->group(function () {
     Route::middleware('isSuperAdmin')->prefix('admin')->group(function () {

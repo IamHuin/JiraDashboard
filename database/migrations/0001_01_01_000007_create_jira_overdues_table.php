@@ -19,6 +19,7 @@ return new class extends Migration {
             $table->text('summary')->comment('Tiêu đề / Nội dung tóm tắt của công việc');
             $table->string('issuetype', 50)->comment('Loại công việc (Sub-task, Story, Milestone, Bug...)');
             $table->string('assignee', 100)->nullable()->comment('Tên người được giao thực hiện công việc');
+            $table->string('display_name')->nullable()->comment('Tên hiển thị');
             $table->string('status', 50)->comment('Trạng thái công việc: Overdue/ Warning');
             $table->string('statusText', 50)->comment('Trạng thái công việc thực tế');
             $table->string('statusLogWork', 50)->nullable()->comment('Trạng thái Log Work Overdue/ Warning/ Missing');
