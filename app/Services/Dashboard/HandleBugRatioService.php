@@ -17,8 +17,8 @@ class HandleBugRatioService
             ->map(function ($group, $key) {
                 [$period, $causer] = explode('|', $key);
                 return [
-                    'period'     => $period,
-                    'causer'     => $causer,
+                    'period' => $period,
+                    'causer' => $causer,
                     'total_bugs' => $group->count()
                 ];
             })
@@ -43,8 +43,8 @@ class HandleBugRatioService
             ->map(function ($group, $key) {
                 [$period, $assignee] = explode('|', $key);
                 return [
-                    'period'         => $period,
-                    'assignee'       => $assignee,
+                    'period' => $period,
+                    'assignee' => $assignee,
                     'total_subtasks' => $group->count()
                 ];
             })
@@ -81,8 +81,8 @@ class HandleBugRatioService
             ->map(function ($group, $key) {
                 [$period, $causer] = explode('|', $key);
                 return [
-                    'period'             => $period,
-                    'causer'             => $causer,
+                    'period' => $period,
+                    'causer' => $causer,
                     'total_bugs_missing' => $group->count()
                 ];
             })
@@ -114,12 +114,12 @@ class HandleBugRatioService
             $percent = $subtaskCount > 0 ? round(($bugCount / $subtaskCount) * 100) : 0;
 
             return [
-                'period'             => $period,
-                'user_name'          => $userName,
-                'total_bugs'         => $bugCount,
-                'total_subtasks'     => $subtaskCount,
+                'period' => $period,
+                'user_name' => $userName,
+                'total_bugs' => $bugCount,
+                'total_subtasks' => $subtaskCount,
                 'total_bugs_missing' => $missingCount,
-                'bug_percent'        => $percent
+                'bug_percent' => $percent
             ];
         })->values();
     }

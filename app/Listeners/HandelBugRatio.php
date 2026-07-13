@@ -5,7 +5,6 @@ namespace App\Listeners;
 use App\Events\IssuesSync;
 use App\Repositories\Interfaces\SyncIssueInterface;
 use App\Services\Dashboard\HandleBugRatioService;
-use Illuminate\Support\Facades\Log;
 
 class HandelBugRatio
 {
@@ -33,19 +32,17 @@ class HandelBugRatio
         foreach ($bugPercentList as $bugRatio) {
             $userName = $bugRatio['user_name'];
 
-            $userIssue = $event->issues->first(fn($i) =>
-                ($i['causer'] === $userName || $i['assignee'] === $userName) && !empty($i['projectName'])
-            );
-
+            $userIssue = $event->issues->first(fn($i) => ($i['causer'] === $userName) && !empty($i['projectName']));
+            
             $bugRatios[] = [
-                'period'             => $bugRatio['period'],
-                'project_name'       => $userIssue['projectName'] ?? null,
-                'user_name'          => $userName,
-                'display_name'       => $userIssue['displayName'] ?? null,
-                'bug_count'          => $bugRatio['total_bugs'],
-                'bug_count_missing'  => $bugRatio['total_bugs_missing'],
-                'bug_percent'        => $bugRatio['bug_percent'],
-                'subtask_count'      => $bugRatio['total_subtasks'],
+                'period' => $bugRatio['period'],
+                'project_name' => $userIssue['projectName'] ?? null,
+                'user_name' => $userName,
+                'display_name' => $userIssue['causer_displayName'] ?? null,
+                'bug_count' => $bugRatio['total_bugs'],
+                'bug_count_missing' => $bugRatio['total_bugs_missing'],
+                'bug_percent' => $bugRatio['bug_percent'],
+                'subtask_count' => $bugRatio['total_subtasks'],
             ];
         }
 

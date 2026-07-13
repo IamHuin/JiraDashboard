@@ -25,8 +25,8 @@ class SyncIssueRepository implements SyncIssueInterface
                 'assignee'        => $issue['assignee'] ?? null,
                 'display_name'    => $issue['displayName'] ?? null,
                 'causer'          => $issue['causer'] ?? null,
+                'causer_displayName' => $issue['causer_displayName'] ?? null,
                 'causer_category' => $issue['causer_category'] ?? null,
-                'ulnl'            => $issue['ulnl'] ?? null,
                 'slsx'            => $issue['slsx'] ?? null,
                 'status'          => $issue['status'] ?? null,
                 'subtask_keys'    => $issue['subtask_keys'] ?? null,
@@ -42,7 +42,7 @@ class SyncIssueRepository implements SyncIssueInterface
             ['key'],
             [        
                 'project_name', 'summary', 'issuetype', 'assignee','display_name',
-                'causer', 'causer_category', 'ulnl', 'slsx',
+                'causer', 'causer_displayName', 'causer_category', 'slsx',
                 'status', 'subtask_keys', 'created_at_jira', 'end_date_jira', 'updated_at'
             ]
         );

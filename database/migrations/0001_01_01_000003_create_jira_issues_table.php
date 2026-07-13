@@ -20,8 +20,8 @@ return new class extends Migration {
             $table->string('assignee')->nullable()->comment('Người được assign xử lý issue');
             $table->string('display_name')->nullable()->comment('Tên hiển thị');
             $table->string('causer')->nullable()->comment('Người gây ra lỗi');
+            $table->string('causer_displayName')->nullable()->comment('Tên hiển thị người gây ra lỗi');
             $table->string('causer_category')->nullable()->comment('Loại gây ra lỗi');
-            $table->string('ulnl')->nullable()->comment('Ước lượng nỗ lực');
             $table->string('slsx')->nullable()->comment('Sản lượng sản xuất');
             $table->string('status')->nullable()->comment('Trạng thái issue');
             $table->json('subtask_keys')->nullable()->comment('Danh sách các subtask keys nếu issue là Story');
