@@ -349,7 +349,7 @@ class DashboardService
         $user = auth()->user();
         if (!$user) return [];
 
-        $ProjectUser = $user->isAdmin() ? $this->projectRepo->getAllProjects() ?? [] : $this->projectRepo->getProjectsJson($user->id) ?? [];
+        $ProjectUser = $this->projectRepo->getProjectsJson($user->id) ?? [];
 
         $ProjectName = collect($ProjectUser)->pluck('name')->toArray();
 
