@@ -23,9 +23,10 @@ class SyncIssueRepository implements SyncIssueInterface
                 'summary'         => $issue['summary'] ?? null,
                 'issuetype'       => $issue['issuetype'] ?? null,
                 'assignee'        => $issue['assignee'] ?? null,
+                'display_name'    => $issue['displayName'] ?? null,
                 'causer'          => $issue['causer'] ?? null,
+                'causer_displayName' => $issue['causer_displayName'] ?? null,
                 'causer_category' => $issue['causer_category'] ?? null,
-                'ulnl'            => $issue['ulnl'] ?? null,
                 'slsx'            => $issue['slsx'] ?? null,
                 'status'          => $issue['status'] ?? null,
                 'subtask_keys'    => $issue['subtask_keys'] ?? null,
@@ -40,8 +41,8 @@ class SyncIssueRepository implements SyncIssueInterface
             $bulkData,
             ['key'],
             [        
-                'project_name', 'summary', 'issuetype', 'assignee',
-                'causer', 'causer_category', 'ulnl', 'slsx',
+                'project_name', 'summary', 'issuetype', 'assignee','display_name',
+                'causer', 'causer_displayName', 'causer_category', 'slsx',
                 'status', 'subtask_keys', 'created_at_jira', 'end_date_jira', 'updated_at'
             ]
         );
@@ -75,9 +76,10 @@ class SyncIssueRepository implements SyncIssueInterface
 
         foreach ($bugRatios as $bugRatio) {
             $bulkData[] = [
-                'user_name'         => $bugRatio['user_name'],
                 'period'            => $bugRatio['period'],
                 'project_name'      => $bugRatio['project_name'] ?? '',
+                'user_name'         => $bugRatio['user_name'],
+                'display_name'      => $bugRatio['display_name'] ?? '',
                 'bug_count'         => $bugRatio['bug_count'] ?? 0,
                 'bug_count_missing' => $bugRatio['bug_count_missing'] ?? 0,
                 'bug_percent'       => $bugRatio['bug_percent'] ?? 0,
@@ -89,37 +91,36 @@ class SyncIssueRepository implements SyncIssueInterface
 
         DB::table('jira_bug_ratios')->upsert(
             $bulkData,
-            ['user_name', 'period', 'project_name'],
+            ['period', 'project_name', 'user_name', 'display_name'],
             ['bug_count', 'bug_count_missing', 'bug_percent', 'subtask_count', 'updated_at']
         );
     }
 
-    public function saveSlsxUlnlRatios(array $slsxUlnlRatios)
+    public function saveSlsxRatios(array $slsxRatios)
     {
-        if (empty($slsxUlnlRatios)) {
+        if (empty($slsxRatios)) {
             return;
         }
 
         $now = now();
         $bulkData = [];
 
-        foreach ($slsxUlnlRatios as $ratio) {
+        foreach ($slsxRatios as $ratio) {
             $bulkData[] = [
-                'user_name'          => $ratio['user_name'],
                 'period'             => $ratio['period'],
                 'project_name'       => $ratio['project_name'] ?? '',
+                'user_name'          => $ratio['user_name'],
+                'display_name'       => $ratio['display_name'] ?? '',
                 'slsx_sum'           => $ratio['slsx_sum'] ?? 0,
-                'ulnl_sum'           => $ratio['ulnl_sum'] ?? 0,
-                'slsx_vs_ulnl_ratio' => $ratio['slsx_vs_ulnl_ratio'] ?? 0,
                 'created_at'         => $now,
                 'updated_at'         => $now,
             ];
         }
 
-        DB::table('jira_slsx_ulnl_ratios')->upsert(
+        DB::table('jira_slsx_users')->upsert(
             $bulkData,
-            ['user_name', 'period', 'project_name'],
-            ['slsx_sum', 'ulnl_sum', 'slsx_vs_ulnl_ratio', 'updated_at']
+            ['period', 'project_name', 'user_name', 'display_name'],
+            ['slsx_sum', 'updated_at']
         );
     }
 }

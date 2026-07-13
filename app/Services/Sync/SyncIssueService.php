@@ -3,19 +3,19 @@
 namespace App\Services\Sync;
 
 use App\DTO\Project\ProjectDTO;
+use App\Enums\SyncStatus;
+use App\Jobs\ProcessJiraChunkJob;
+use App\Jobs\ProcessMilestonesJob;
 use App\Models\User;
 use App\Repositories\Interfaces\ProjectInterface;
 use App\Repositories\Interfaces\SyncIssueInterface;
 use App\Services\Ping\ConnectJiraService;
-use App\Jobs\ProcessJiraChunkJob;
-use App\Jobs\ProcessMilestonesJob;
-use App\Enums\SyncStatus;
 use Carbon\Carbon;
 use Exception;
-use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Log;
 use Throwable;
 
@@ -45,7 +45,7 @@ class SyncIssueService extends ConnectJiraService
 
         $maxResults = 50;
 
-        $fieldsParam = "&fields=project,summary,issuetype,assignee,customfield_11321,customfield_11323,customfield_11306,status,created,customfield_10108,customfield_10115,subtasks&expand=changelog";
+        $fieldsParam = "&fields=project,summary,issuetype,assignee,customfield_11321,customfield_11306,status,created,customfield_10108,customfield_10115,subtasks&expand=changelog";
 
         // Tạo URL cho đợt check đầu tiên nhằm lấy "total" số lượng bản ghi
         $firstUrl = "/rest/api/2/search?jql=" . urlencode($jql) . "&startAt=0&maxResults={$maxResults}" . $fieldsParam;
@@ -84,16 +84,24 @@ class SyncIssueService extends ConnectJiraService
             ->dispatch();
     }
 
-    public function syncFullIssues(User $user): void
+    public function syncFullIssues(User $user, array $projectNames = [], string $period_from = '', string $period_to = ''): void
     {
-        $startOfMonth = Carbon::now()->subMonths(2)->startOfMonth()->format('Y-m-d');
-        $endDate = Carbon::now()->format('Y-m-d');
+        $fromDate = Carbon::createFromFormat('m-Y', $period_from)->startOfMonth()->format('Y-m-d');
+        $toDate = Carbon::createFromFormat('m-Y', $period_to)->endOfMonth()->format('Y-m-d');
 
-        $jql = "issuetype IN (Bug, \"Sub-task\", Story, Milestone) 
-            AND status != Cancelled 
-            AND created >= '{$startOfMonth}' 
-            AND created <= '{$endDate}' 
-            ORDER BY created ASC";
+        $jqlParts = [];
+
+        if (!empty($projectNames)) {
+            $projectStr = implode(",", $projectNames);
+            $jqlParts[] = "project in ({$projectStr})";
+        }
+
+        $jqlParts[] = "issuetype IN (Bug, \"Sub-task\", Story, Milestone)";
+        $jqlParts[] = "status != Cancelled";
+        $jqlParts[] = "created >= '{$fromDate}'";
+        $jqlParts[] = "created <= '{$toDate}'";
+
+        $jql = implode(" AND ", $jqlParts) . " ORDER BY created ASC";
 
         $this->fetchAndProcessIssuesByJql($jql, $user, 'full');
     }

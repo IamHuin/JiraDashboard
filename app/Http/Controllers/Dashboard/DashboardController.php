@@ -5,21 +5,23 @@ namespace App\Http\Controllers\Dashboard;
 use App\DTO\Dashboard\DashboardDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Dashboard\DashboardRequest;
-use App\Http\Requests\ImportRequest;
 use App\Http\Requests\Milestone\MilestoneRequest;
+use App\Http\Requests\NLTC\ImportRequest;
 use App\Http\Requests\Overdue\OverdueRequest;
 use App\Services\Dashboard\DashboardService;
+use App\Services\NLTC\JiraNltcService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class DashboardController extends Controller
 {
     protected DashboardService $dashboardService;
+    protected JiraNltcService $nltcService;
 
-    public function __construct(DashboardService $dashboardService)
+    public function __construct(DashboardService $dashboardService, JiraNltcService $nltcService)
     {
         $this->dashboardService = $dashboardService;
+        $this->nltcService = $nltcService;
     }
 
     public function overview(DashboardRequest $request): JsonResponse
@@ -137,53 +139,11 @@ class DashboardController extends Controller
         return response()->json($result);
     }
 
-//    public function importSlsx(ImportRequest $request): JsonResponse
-//    {
-//        $file = $request->file('file');
-//        $spreadsheet = IOFactory::load($file->getRealPath());
-//        $worksheet = $spreadsheet->getActiveSheet();
-//        $data = $worksheet->toArray();
-//        $data = array_filter($data, function ($row) {
-//            foreach ($row as $cell) {
-//                if (!is_null($cell) && trim($cell) !== '') {
-//                    return true;
-//                }
-//            }
-//            return false;
-//        });
-//        $requiredColumns = [
-//            'Dự án',
-//            'Email',
-//            'Tên',
-//            'Role',
-//            'Level',
-//            'Ra Tiêu chuẩn ',
-//        ];
-//        $filteredArray = array_filter($data[3], function ($value) {
-//            return !is_null($value) && trim($value) !== '';
-//        });
-//        $missingColumns = array_diff($requiredColumns, $filteredArray);
-//        
-//        if (!empty($missingColumns)) {
-//            return response()->json([
-//                'success' => false,
-//                'message' => 'File không đúng định dạng. Vui lòng sử dụng file mẫu.',
-//            ]);
-//        }
-//        if (empty($data) || count($data) < 2) {
-//            return response()->json([
-//                'success' => false,
-//                'message' => 'File không có đủ dữ liệu để xử lý.',
-//            ]);
-//        }
-//        if (count($data) > 501) {
-//            return response()->json([
-//                'success' => false,
-//                'message' => 'Vui lòng import tối đa 500 bản ghi.',
-//            ]);
-//        }
-//        dd($filteredArray,$missingColumns);
-//    }
+    public function importSlsx(ImportRequest $request): JsonResponse
+    {
+        $result = $this->nltcService->importData($request->file('file'));
+        return response()->json($result);
+    }
 
     public function getTrackedCacheKeys(): JsonResponse
     {

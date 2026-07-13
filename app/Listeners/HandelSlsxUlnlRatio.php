@@ -3,23 +3,20 @@
 namespace App\Listeners;
 
 use App\Events\IssuesSync;
-use App\Repositories\Interfaces\SyncIssueInterface;
 use App\Services\Dashboard\HandleSlsxUlnlRatioService;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class HandelSlsxUlnlRatio
 {
     protected $handelSlsxUlnlService;
-    protected $syncRepo;
 
     /**
      * Create the event listener.
      */
-    public function __construct(HandleSlsxUlnlRatioService $handelSlsxUlnlService, SyncIssueInterface $syncRepo)
+    public function __construct(HandleSlsxUlnlRatioService $handelSlsxUlnlService)
     {
         $this->handelSlsxUlnlService = $handelSlsxUlnlService;
-        $this->syncRepo = $syncRepo;
     }
 
     /**
@@ -27,16 +24,16 @@ class HandelSlsxUlnlRatio
      */
     public function handle(IssuesSync $event): void
     {
-        $slsxUlnlRatios = [];
+        $slsxUser = [];
 
         $issuesByPeriod = $event->issues->groupBy(function ($issue) {
             return Carbon::parse($issue['enddate'])->format('m-Y');
         });
 
         foreach ($issuesByPeriod as $period => $periodIssues) {
-            $slsxUlnlPercent = $this->handelSlsxUlnlService->slsxUlnlPercent($periodIssues);
+            $slsxSum = $this->handelSlsxUlnlService->slsxSum($periodIssues);
 
-            foreach ($slsxUlnlPercent as $item) {
+            foreach ($slsxSum as $item) {
                 $userName = $item['username'];
 
                 $userIssues = $periodIssues->filter(function ($issue) use ($userName) {
@@ -44,19 +41,30 @@ class HandelSlsxUlnlRatio
                         && ($issue['assignee'] ?? null) === $userName;
                 });
 
-                $slsxUlnlRatios[] = [
-                    'project_name' => $userIssues->first()['projectName'] ?? null,
-                    'user_name' => $userName,
-                    'slsx_sum' => $item['slsx_sum'],
-                    'ulnl_sum' => $item['ulnl_sum'],
-                    'slsx_vs_ulnl_ratio' => $item['slsx_vs_ulnl_ratio'],
+                $firstIssue = $userIssues->first();
+                $projectName = $firstIssue ? ($firstIssue['projectName'] ?? null) : null;
+
+                $slsxUser[] = [
                     'period' => $period,
+                    'project_name' => $projectName,
+                    'user_name' => $userName,
+                    'display_name' => $item['display_name'] ?? $userName,
+                    'slsx_sum' => $item['slsx_sum'],
                 ];
             }
         }
 
-        if (!empty($slsxUlnlRatios)) {
-            $this->syncRepo->saveSlsxUlnlRatios($slsxUlnlRatios);
+        if (!empty($slsxUser)) {
+            // Lưu dữ liệu sản lượng vào jira_slsx_users
+            DB::table('jira_slsx_users')->upsert(
+                $slsxUser, 
+                ['period', 'project_name', 'user_name'], 
+                ['display_name', 'slsx_sum']
+            );
+            
+            // Tính toán tỷ lệ và lưu vào jira_slsx_ratios
+            $periods = array_keys($issuesByPeriod->toArray());
+            $this->handelSlsxUlnlService->calculateAndSaveRatios($periods, $event->syncingUser?->id);
         }
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Enums\SyncStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Sync\SyncRequest;
 use App\Jobs\SyncIssueJob;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -16,9 +17,9 @@ class SyncIssueController extends Controller
         return "jira-sync-status:" . Auth::id() . ":{$mode}";
     }
 
-    public function syncFullIssues(): JsonResponse
+    public function syncFullIssues(SyncRequest $request): JsonResponse
     {
-        return $this->dispatchSync('full');
+        return $this->dispatchSync('full', $request->input('project_names', []), $request->input('period_from'), $request->input('period_to'));
     }
 
     public function syncFromLastIssues(): JsonResponse
@@ -26,7 +27,7 @@ class SyncIssueController extends Controller
         return $this->dispatchSync('last');
     }
 
-    protected function dispatchSync(string $mode): JsonResponse
+    protected function dispatchSync(string $mode, array $project_names = [], string $period_from = '', string $period_to = ''): JsonResponse
     {
         $key = $this->cacheKey($mode);
         $current = Cache::get($key);
@@ -39,8 +40,8 @@ class SyncIssueController extends Controller
             ], 429);
         }
 
-        Cache::put($key, SyncStatus::IDLE->value, now()->addHours(2)); // đặt trạng thái tạm trước khi job set RUNNING
-        SyncIssueJob::dispatch(Auth::id(), $mode);
+        Cache::put($key, SyncStatus::RUNNING->value, now()->addHours(2)); // Đã sửa thành RUNNING để khóa request trùng
+        SyncIssueJob::dispatch(Auth::id(), $mode, $project_names, $period_from, $period_to);
 
         return response()->json([
             'success' => true,

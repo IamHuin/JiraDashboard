@@ -2,8 +2,15 @@
 
 namespace App\Services\Dashboard;
 
+use App\Services\Cache\DashboardCacheService;
+use Illuminate\Support\Facades\DB;
+
 class HandleSlsxUlnlRatioService
 {
+    public function __construct(protected DashboardCacheService $cacheService)
+    {
+
+    }
     public function slsxSum($issues)
     {
         return $issues
@@ -14,53 +21,69 @@ class HandleSlsxUlnlRatioService
             ->groupBy(fn($issue) => $issue['assignee'])
             ->map(fn($group, $assignee) => [
                 'username' => $assignee,
+                'display_name' => $group->first()['displayName'] ?? $assignee,
                 'slsx_sum' => $group->filter(fn($issue) => !empty($issue['slsx']))->sum('slsx')
             ])
             ->values();
     }
 
-    public function ulnlSum($issues)
+    /**
+     * Tính toán tỷ lệ SLSX / NLTC dựa trên dữ liệu giao nhau giữa jira_slsx_users và jira_nltc
+     *
+     * @param array $periods Danh sách các kỳ cần cập nhật (vd: ['07-2024'])
+     */
+    public function calculateAndSaveRatios(array $periods, ?int $userId = null)
     {
-        return $issues
-            ->filter(fn($issue) => ($issue['issuetype'] === 'Sub-task')
-                && !empty($issue['assignee'])
-                && $issue['status'] === 'Done'
-            )
-            ->groupBy(fn($issue) => $issue['assignee'])
-            ->map(fn($group, $assignee) => [
-                'username' => $assignee,
-                'ulnl_sum' => $group->sum(function ($issue) {
-                    $ulnl = $issue['ulnl'] ?? null;
-                    $slsx = $issue['slsx'] ?? null;
+        if (empty($periods)) {
+            return;
+        }
 
-                    return !empty($ulnl) ? (float)$ulnl : (float)$slsx;
-                })
-            ])
-            ->values();
-    }
+        // Lấy danh sách giao nhau giữa sản lượng và năng lực tiêu chuẩn
+        $ratios = DB::table('jira_slsx_users as S')
+            ->join('jira_nltc as N', function ($join) {
+                $join->on('S.period', '=', 'N.period')
+                     ->on('S.project_name', '=', 'N.project_name')
+                     ->on('S.user_name', '=', 'N.user_name');
+            })
+            ->whereIn('S.period', $periods)
+            ->select('S.period', 'S.project_name', 'S.user_name', 'S.display_name', 'S.slsx_sum', 'N.standard')
+            ->get();
 
-    public function slsxUlnlPercent($issues)
-    {
-        $totalSlsx = $this->slsxSum($issues);
+        $upsertData = [];
+        foreach ($ratios as $row) {
+            $standard = (float)$row->standard;
+            $slsxSum = (float)$row->slsx_sum;
+            
+            $ratio = 0;
+            if ($standard > 0) {
+                $ratio = (int)round(($slsxSum / $standard) * 100);
+            }
 
-        $totalUlnl = $this->ulnlSum($issues)->keyBy('username');
-
-        return $totalSlsx->map(function ($issue) use ($totalUlnl) {
-            $username = $issue['username'];
-
-            $ulnl = $totalUlnl->get($username)['ulnl_sum'] ?? $issue['slsx_sum'];
-
-            $slsxSum = (float)$issue['slsx_sum'];
-            $ulnlSum = (float)$ulnl;
-
-            $ratio = ($slsxSum == 0 || $ulnlSum == 0) ? 0 : round(($slsxSum / $ulnlSum) * 100);
-
-            return [
-                'username' => $username,
+            $upsertData[] = [
+                'period' => $row->period,
+                'project_name' => $row->project_name,
+                'user_name' => $row->user_name,
+                'display_name' => $row->display_name,
                 'slsx_sum' => $slsxSum,
-                'ulnl_sum' => $ulnlSum,
-                'slsx_vs_ulnl_ratio' => $ratio,
+                'standard' => $row->standard,
+                'slsx_nltc_ratio' => $ratio,
             ];
-        })->values();
+        }
+        
+        $finalUserId = $userId ?? auth()->id();
+        if ($finalUserId) {
+            foreach ($periods as $period) {
+                $targetCacheKey = "user_{$finalUserId}_slsx_ulnl_ratio_leaderboard_{$period}";
+                $this->cacheService->findCacheKey($finalUserId, $targetCacheKey);
+            }
+        }
+
+        if (!empty($upsertData)) {
+            DB::table('jira_slsx_ratios')->upsert(
+                $upsertData, 
+                ['period', 'project_name', 'user_name'], 
+                ['display_name', 'slsx_sum', 'standard', 'slsx_nltc_ratio']
+            );
+        }
     }
 }

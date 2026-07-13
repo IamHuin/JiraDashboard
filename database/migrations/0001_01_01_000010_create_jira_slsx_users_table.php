@@ -11,16 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('jira_slsx_ulnl_ratios', function (Blueprint $table) {
+        Schema::create('jira_slsx_users', function (Blueprint $table) {
             $table->id();
 
             $table->string('period')->comment('Tháng/năm thống kê dạng chuỗi m-Y');
             $table->string('project_name')->default('')->comment('Tên dự án trên Jira');
             $table->string('user_name')->comment('Tên người dùng: causer hoặc assignee');
-
-            $table->decimal('ulnl_sum', 10, 3)->default(0)->comment('Tổng ULNL');
+            $table->string('display_name')->nullable()->comment('Tên hiển thị');
             $table->decimal('slsx_sum', 10, 3)->default(0)->comment('Tổng SLSX');
-            $table->integer('slsx_vs_ulnl_ratio')->default(0)->comment('Tỷ lệ % SLSX so với ULNL');
 
             $table->index(['period', 'project_name'], 'idx_period_project');
 
@@ -35,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('jira_slsx_ulnl_ratios');
+        Schema::dropIfExists('jira_slsx_users');
     }
 };
