@@ -68,10 +68,13 @@ class USBudgetRepository implements USBudgetInterface
             });
         }
 
-        if (!empty($username)) {
-            $query->where('assignee', 'like', "%{$username}%")
-                ->orWhere('display_name', 'like', "%{$username}%");
+        if (!empty($userName)) {
+            $query->where(function ($q) use ($userName) {
+                $q->where('assignee', 'like', "%{$userName}%")
+                    ->orWhere('display_name', 'like', "%{$userName}%");
+            });
         }
+
 
         return $query->orderBy('ratioSLSX', 'desc')->paginate($perPage);
     }

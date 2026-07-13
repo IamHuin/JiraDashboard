@@ -47,8 +47,10 @@ class DashboardRepository implements DashboardInterface
         }
 
         if (!empty($userName)) {
-            $query->where('user_name', 'like', "%{$userName}%")
-                ->orWhere('display_name', 'like', "%{$userName}%");
+            $query->where(function ($q) use ($userName) {
+                $q->where('user_name', 'like', "%{$userName}%")
+                    ->orWhere('display_name', 'like', "%{$userName}%");
+            });
         }
 
         if (!empty($projectNames)) {
@@ -71,8 +73,10 @@ class DashboardRepository implements DashboardInterface
         }
 
         if (!empty($userName)) {
-            $query->where('user_name', 'like', "%{$userName}%")
-                ->orWhere('display_name', 'like', "%{$userName}%");
+            $query->where(function ($q) use ($userName) {
+                $q->where('user_name', 'like', "%{$userName}%")
+                    ->orWhere('display_name', 'like', "%{$userName}%");
+            });
         }
 
         if (!empty($projectNames)) {
@@ -106,8 +110,10 @@ class DashboardRepository implements DashboardInterface
         }
 
         if (!empty($username)) {
-            $query->where('assignee', 'like', "%{$username}%")
-                ->orWhere('display_name', 'like', "%{$username}%");
+            $query->where(function ($q) use ($username) {
+                $q->where('assignee', 'like', "%{$username}%")
+                    ->orWhere('display_name', 'like', "%{$username}%");
+            });
         }
 
         $query->orderBy('enddate', 'desc');
@@ -136,8 +142,10 @@ class DashboardRepository implements DashboardInterface
         }
 
         if (!empty($username)) {
-            $query->where('assignee', 'like', "%{$username}%")
-                ->orWhere('display_name', 'like', "%{$username}%");
+            $query->where(function ($q) use ($username) {
+                $q->where('assignee', 'like', "%{$username}%")
+                    ->orWhere('display_name', 'like', "%{$username}%");
+            });
         }
 
         $query->orderBy('enddate', 'desc');
