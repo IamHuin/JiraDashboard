@@ -31,8 +31,8 @@ fi
 
 php artisan config:cache
 
-echo "Running migrations..."
-php artisan migrate --force
+echo "Running migrations (fresh)..."
+php artisan migrate:fresh --force
 
 echo "Seeding admin account..."
 php artisan db:seed --force
