@@ -97,7 +97,7 @@ class DashboardRepository implements DashboardInterface
             $query->where('status', $status);
         }
 
-        $query->orderBy('enddate', 'desc');
+        $query->orderBy('enddate', 'asc');
         return $query->paginate($perPage);
     }
 
