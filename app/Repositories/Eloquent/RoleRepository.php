@@ -26,16 +26,16 @@ class RoleRepository implements RoleInterface
     }
 
     /**
-     * Tạo mới một Role và lưu mảng project dưới dạng JSON
+     * Tạo mới một Role và lưu mảng permission dưới dạng JSON
      */
     public function createRole(array $data)
     {
         try {
-            $jiraProjectJson = isset($data['project_keys']) ? json_encode($data['project_keys']) : json_encode([]);
+            $permissionJson = isset($data['permissions']) ? json_encode($data['permissions']) : json_encode([]);
 
             $role = Role::create([
-                'name'               => $data['name'],
-                'jira_projects_json' => $jiraProjectJson
+                'name'            => $data['name'],
+                'permission_json' => $permissionJson
             ]);
 
             return $role;
@@ -46,7 +46,7 @@ class RoleRepository implements RoleInterface
     }
 
     /**
-     * Cập nhật thông tin Role và chuỗi JSON project
+     * Cập nhật thông tin Role và chuỗi JSON permission
      */
     public function updateRole($id, array $data)
     {
@@ -60,8 +60,8 @@ class RoleRepository implements RoleInterface
                 'name' => $data['name']
             ];
 
-            if (isset($data['project_keys'])) {
-                $updateData['jira_projects_json'] = json_encode($data['project_keys']);
+            if (isset($data['permissions'])) {
+                $updateData['permission_json'] = json_encode($data['permissions']);
             }
 
             $role->update($updateData);

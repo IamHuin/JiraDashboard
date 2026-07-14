@@ -9,16 +9,20 @@ class ManagerRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'is_admin' => 'nullable|boolean',
-            'user_name' => ['nullable', 'string']
+            'super_admin' => 'nullable|boolean',
+            'user_name' => ['nullable', 'string'],
+            'role_id'   => ['nullable', 'integer', 'exists:roles,id'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'is_admin.boolean' => 'Trường quyền admin phải là kiểu logic',
+            'super_admin.boolean' => 'Trường quyền Super Admin phải là kiểu logic.',
+            'user_name.nullable' => 'Tên người dùng là bắt buộc.',
             'user_name.string' => 'Tên người dùng phải là một chuỗi ký tự.',
+            'role_id.integer'  => 'ID vai trò không hợp lệ.',
+            'role_id.exists'   => 'Vai trò này không tồn tại trong hệ thống.',
         ];
     }
 }

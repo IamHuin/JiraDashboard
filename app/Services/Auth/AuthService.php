@@ -46,6 +46,15 @@ class AuthService
 
         $user = $this->userRepo->updateOrCreateByJira($dto, $userData);
 
+        if (is_null($user->role_id)) {
+            $defaultRole = Role::firstOrCreate(
+                ['name' => 'User'],
+                ['permission_json' => ['dashboard']]
+            );
+            $user->role_id = $defaultRole->id;
+            $user->save();
+        }
+
         $token = auth()->login($user);
 
         try {
@@ -54,11 +63,13 @@ class AuthService
             Log::error("Lỗi đồng bộ dự án trực tiếp khi Login (Vẫn cho phép login tiếp tục): " . $e->getMessage());
         }
 
+        $permissions = $user->isSuperAdmin() ? ['*'] : ($user->role->permission_json ?? []);
+
         $responseData = [
             'token' => $token,
             'display_name' => $userData['displayName'] ?? $userData['name'] ?? 'unknown',
             'super_admin' => $user->super_admin ?? IsAdminEnum::NO,
-            'is_admin' => $user->is_admin ?? IsAdminEnum::NO,
+            'permissions' => $permissions,
         ];
 
         unset($userData, $user, $token);
@@ -83,7 +94,7 @@ class AuthService
             'token' => $token,
             'display_name' => $user->jira_display_name ?? 'Super Admin',
             'super_admin' => $user->super_admin ?? IsAdminEnum::YES,
-            'is_admin' => $user->is_admin ?? IsAdminEnum::YES,
+            'permissions' => ['*'],
         ];
     }
 }

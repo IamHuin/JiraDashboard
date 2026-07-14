@@ -18,7 +18,7 @@ class RoleService
     }
 
     /**
-     * Tạo mới một Role (Lưu mảng project dưới dạng JSON)
+     * Tạo mới một Role (Lưu mảng permission dưới dạng JSON)
      */
     public function createRole(array $data)
     {
@@ -34,7 +34,7 @@ class RoleService
     }
 
     /**
-     * Cập nhật thông tin Role và chuỗi JSON project
+     * Cập nhật thông tin Role và chuỗi JSON permission
      */
     public function updateRole($id, array $data)
     {

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\isAdminMiddleware;
 use App\Http\Middleware\isSuperAdminMiddleware;
 use App\Http\Middleware\isUserMiddleware;
@@ -18,9 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'isSuperAdmin' => isSuperAdminMiddleware::class,
-            'isUser' => isUserMiddleware::class,
-            'isAdmin' => isAdminMiddleware::class,
+            'permission' => CheckPermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

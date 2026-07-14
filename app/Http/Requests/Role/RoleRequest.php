@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Role;
 
+use App\Enums\PermissionEnum;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class RoleRequest extends FormRequest
 {
@@ -20,8 +22,11 @@ class RoleRequest extends FormRequest
                 'max:255',
                 $roleId ? 'unique:roles,name,' . $roleId : 'unique:roles,name'
             ],
-            'project_keys'   => ['required', 'array'],
-            'project_keys.*' => ['string'],
+            'permissions' => ['required', 'array'],
+            'permissions.*' => [
+                'string',
+                Rule::in(PermissionEnum::getAll())
+            ],
         ];
     }
     
@@ -31,9 +36,9 @@ class RoleRequest extends FormRequest
             'name.required'         => 'Tên vai trò không được để trống.',
             'name.string'           => 'Tên vai trò phải là chuỗi ký tự.',
             'name.unique'           => 'Tên vai trò này đã tồn tại trong hệ thống.',
-            'project_keys.required' => 'Danh sách mã dự án không được để trống.',
-            'project_keys.array'    => 'Danh sách mã dự án phải thuộc định dạng mảng.',
-            'project_keys.*.string' => 'Mã dự án bên trong mảng phải là chuỗi ký tự.',
+            'permissions.required' => 'Danh sách quyền không được để trống.',
+            'permissions.array' => 'Danh sách quyền phải thuộc định dạng mảng.',
+            'permissions.*.string' => 'Quyền bên trong mảng phải là chuỗi ký tự.',
         ];
     }
 }

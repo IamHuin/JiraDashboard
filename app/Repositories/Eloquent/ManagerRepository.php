@@ -12,26 +12,54 @@ class ManagerRepository implements ManagerInterface
     public function getListUsers(ManagerDTO $dto, int $perPage = 10): LengthAwarePaginator
     {
         $query = DB::table('users')
-            ->select('id', 'jira_username', 'jira_display_name', 'is_admin')
-            ->where('super_admin', 0)
+            ->leftJoin('roles', 'users.role_id', '=', 'roles.id')
+            ->select(
+                'users.id', 
+                'users.jira_username', 
+                'users.jira_display_name', 
+                'users.super_admin',
+                'roles.id as role_id', 
+                'roles.name as role_name'
+            )
 
-            ->when($dto->is_admin !== null, function ($query) use ($dto) {
-                $query->where('is_admin', $dto->is_admin);
+            ->when($dto->super_admin !== null, function ($query) use ($dto) {
+                $query->where('users.super_admin', $dto->super_admin);
             })
 
-            ->orderBy('updated_at', 'desc');
+            ->orderBy('users.updated_at', 'desc');
         
-        return $query->paginate($perPage);
+        $paginator = $query->paginate($perPage);
+
+        $paginator->getCollection()->transform(function ($user) {
+            if ($user->super_admin == 1) {
+                $user->role_name = 'Super Admin';
+            }
+            return $user;
+        });
+
+        return $paginator;
     }
 
     public function updateUser(ManagerDTO $dto)
     {
-        if ($dto->is_admin === null) {
+        if ($dto->super_admin === null && $dto->role_id === null) {
+            return false;
+        }
+
+        $updateData = [];
+        if ($dto->super_admin !== null) {
+            $updateData['super_admin'] = $dto->super_admin;
+        }
+        if ($dto->role_id !== null) {
+            $updateData['role_id'] = $dto->role_id;
+        }
+
+        if (empty($updateData)) {
             return false;
         }
 
         return DB::table('users')
             ->where('jira_username', $dto->user_name)
-            ->update(['is_admin' => $dto->is_admin]);
+            ->update($updateData);
     }
 }
