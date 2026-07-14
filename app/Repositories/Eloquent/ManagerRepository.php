@@ -21,6 +21,7 @@ class ManagerRepository implements ManagerInterface
                 'roles.id as role_id', 
                 'roles.name as role_name'
             )
+            ->where('users.jira_username', '!=', 'admin')
 
             ->when($dto->super_admin !== null, function ($query) use ($dto) {
                 $query->where('users.super_admin', $dto->super_admin);
