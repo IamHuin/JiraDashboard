@@ -114,6 +114,7 @@ class ProcessJiraChunkJob implements ShouldQueue
                     'statusText'   => $detailData['statusText'] ?? null,
                     'statusLogWork'=> $detailData['statusLogWork'] ?? null,
                     'statusTextLogWork' => $detailData['statusTextLogWork'] ?? null,
+                    'note' => $detailData['note'] ?? null,
                     'created_at'   => now(),
                     'updated_at'   => now(),
                 ];

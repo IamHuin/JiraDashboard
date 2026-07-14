@@ -50,6 +50,8 @@ class DashboardRepository implements DashboardInterface
             $query->whereIn('project_name', $projectNames);
         }
 
+        $query->whereNotNull('display_name')->where('display_name', '!=', '');
+
         $query->orderBy('bug_count', 'desc')
         ->orderBy('bug_percent', 'desc');
 
@@ -77,7 +79,7 @@ class DashboardRepository implements DashboardInterface
     public function getOverdueIssues(string $period, ?array $projectNames = [], ?string $issueType = null, ?string $status = null, int $perPage = 10): LengthAwarePaginator
     {
         $query = DB::table('jira_overdues')
-            ->select('id', 'key', 'summary', 'issuetype', 'assignee', 'display_name', 'status', 'statusText', 'enddate');
+            ->select('id', 'key', 'summary', 'issuetype', 'assignee', 'display_name', 'status', 'statusText', 'enddate', 'note');
 
         if ($period) {
             $query->where('period', $period);
